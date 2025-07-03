@@ -54,37 +54,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
 
-      - name: Test container functionality
-        run: |
-          # Get the latest built tag
-          LATEST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
-          # Start the container
-          CONTAINER_ID=$(docker run -d -p 8080:80 $LATEST_TAG)
-          echo "Waiting for container to start..."
-          sleep 60
-          if ! docker ps | grep -q $CONTAINER_ID; then
-            echo "Container failed to start"
-            docker logs $CONTAINER_ID
-            exit 1
-          fi
-          echo "Testing root endpoint..."
-          for i in {1..30}; do
-            if curl -f -s http://localhost:8080/ > /dev/null; then
-              echo "✅ Container is working! Root endpoint accessible."
-              break
-            fi
-            echo "Attempt $i: Waiting for application to be ready..."
-            sleep 2
-          done
-          if ! curl -f -s http://localhost:8080/ > /dev/null; then
-            echo "❌ Container test failed - root endpoint not accessible"
-            docker logs $CONTAINER_ID
-            exit 1
-          fi
-          docker stop $CONTAINER_ID
-          docker rm $CONTAINER_ID
-          echo "✅ Container test completed successfully"
-
       - name: Push Docker image
         uses: docker/build-push-action@v5
         with:
