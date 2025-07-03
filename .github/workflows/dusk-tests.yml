@@ -1,0 +1,119 @@
+name: Dusk Browser Tests
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  dusk-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      # Add Chrome service for headless testing
+      chrome:
+        image: selenium/standalone-chrome:latest
+        ports:
+          - 4444:4444
+          - 7900:7900
+        options: >-
+          --health-cmd "curl -f http://localhost:4444/wd/hub/status || exit 1"
+          --health-interval 30s
+          --health-timeout 10s
+          --health-retries 3
+          --shm-size=2g
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Node Dependencies
+        run: npm ci
+
+      - name: Build Assets
+        run: npm run build
+
+      - name: Install PHP Dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Copy Environment File
+        run: cp .env.example .env
+
+      - name: Generate Application Key
+        run: php artisan key:generate
+
+      - name: Create Database
+        run: |
+          touch database/database.sqlite
+          php artisan migrate --force
+
+      - name: Start Laravel Development Server
+        run: |
+          php artisan serve --host=0.0.0.0 --port=8000 > /dev/null 2>&1 &
+          echo "Laravel server started in background"
+        env:
+          APP_ENV: testing
+          APP_URL: http://localhost:8000
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+
+      - name: Wait for Laravel Server
+        run: |
+          sleep 5
+          timeout 30 bash -c 'until curl -f http://localhost:8000; do sleep 1; done'
+          echo "Laravel server is running on http://localhost:8000"
+          echo "Testing connection from runner:"
+          curl -v http://localhost:8000
+
+      - name: Wait for Selenium
+        run: |
+          timeout 60 bash -c 'until curl -f http://localhost:4444/wd/hub/status; do sleep 2; done'
+          echo "Selenium is running"
+          echo "Testing if Selenium can access Laravel server:"
+          curl -v http://host.docker.internal:8000 || echo "host.docker.internal not accessible"
+
+      - name: Run Dusk Tests
+        run: |
+          # Get the runner's IP address
+          RUNNER_IP=$(hostname -I | awk '{print $1}')
+          echo "Runner IP: $RUNNER_IP"
+          echo "Setting APP_URL to http://$RUNNER_IP:8000"
+          APP_URL="http://$RUNNER_IP:8000" php artisan dusk
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+          DUSK_DRIVER_URL: http://localhost:4444/wd/hub
+
+      - name: Upload Screenshots (on failure)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: dusk-screenshots
+          path: tests/Browser/screenshots/
+          retention-days: 5
+
+      - name: Upload Console Logs (on failure)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: dusk-console-logs
+          path: tests/Browser/console/
+          retention-days: 5 
