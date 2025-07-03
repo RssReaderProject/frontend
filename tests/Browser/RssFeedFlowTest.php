@@ -3,11 +3,11 @@
 namespace Tests\Browser;
 
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\Http;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
-use Carbon\Carbon;
 
 class RssFeedFlowTest extends DuskTestCase
 {
@@ -98,4 +98,4 @@ class RssFeedFlowTest extends DuskTestCase
                 ->assertSee('No posts found');
         });
     }
-} 
+}

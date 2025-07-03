@@ -2,7 +2,6 @@
 
 namespace Tests\Browser;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
@@ -19,35 +18,35 @@ class AuthenticationTest extends DuskTestCase
         $this->browse(function (Browser $browser) {
             // Test registration
             $browser->visit('/register')
-                    ->assertSee('Register')
-                    ->type('name', 'Test User')
-                    ->type('email', 'test@example.com')
-                    ->type('password', 'password123')
-                    ->type('password_confirmation', 'password123')
-                    ->press('Register')
-                    ->waitForLocation('/dashboard')
-                    ->assertPathIs('/dashboard')
-                    ->assertSee('Dashboard')
-                    ->assertSee('Test User');
+                ->assertSee('Register')
+                ->type('name', 'Test User')
+                ->type('email', 'test@example.com')
+                ->type('password', 'password123')
+                ->type('password_confirmation', 'password123')
+                ->press('Register')
+                ->waitForLocation('/dashboard')
+                ->assertPathIs('/dashboard')
+                ->assertSee('Dashboard')
+                ->assertSee('Test User');
 
             // Test logout
             $browser->click('.dropdown-toggle')
-                    ->waitFor('.dropdown-menu')
-                    ->click('.dropdown-item.text-danger')
-                    ->waitForLocation('/login')
-                    ->assertPathIs('/login')
-                    ->assertDontSee('Test User');
+                ->waitFor('.dropdown-menu')
+                ->click('.dropdown-item.text-danger')
+                ->waitForLocation('/login')
+                ->assertPathIs('/login')
+                ->assertDontSee('Test User');
 
             // Test login
             $browser->visit('/login')
-                    ->assertSee('Log in')
-                    ->type('email', 'test@example.com')
-                    ->type('password', 'password123')
-                    ->press('Log in')
-                    ->waitForLocation('/dashboard')
-                    ->assertPathIs('/dashboard')
-                    ->assertSee('Dashboard')
-                    ->assertSee('Test User');
+                ->assertSee('Log in')
+                ->type('email', 'test@example.com')
+                ->type('password', 'password123')
+                ->press('Log in')
+                ->waitForLocation('/dashboard')
+                ->assertPathIs('/dashboard')
+                ->assertSee('Dashboard')
+                ->assertSee('Test User');
         });
     }
 
@@ -57,7 +56,7 @@ class AuthenticationTest extends DuskTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Ensure we have a clean database
         $this->artisan('migrate:fresh');
     }
@@ -69,9 +68,9 @@ class AuthenticationTest extends DuskTestCase
     {
         $this->browse(function (Browser $browser) {
             $browser->visit('/dashboard')
-                    ->waitForLocation('/login')
-                    ->assertPathIs('/login')
-                    ->assertSee('Log in');
+                ->waitForLocation('/login')
+                ->assertPathIs('/login')
+                ->assertSee('Log in');
         });
     }
 
@@ -82,14 +81,14 @@ class AuthenticationTest extends DuskTestCase
     {
         $this->browse(function (Browser $browser) {
             $browser->visit('/register')
-                    ->assertSee('Register')
+                ->assertSee('Register')
                     // Remove required attributes so we can test server-side validation
-                    ->script("document.querySelectorAll('[required]').forEach(e => e.removeAttribute('required'));");
+                ->script("document.querySelectorAll('[required]').forEach(e => e.removeAttribute('required'));");
             $browser->press('Register')
-                    ->waitForLocation('/register')
-                    ->waitForText('The name field is required.')
-                    ->assertSee('The email field is required.')
-                    ->assertSee('The password field is required.');
+                ->waitForLocation('/register')
+                ->waitForText('The name field is required.')
+                ->assertSee('The email field is required.')
+                ->assertSee('The password field is required.');
         });
     }
 
@@ -100,13 +99,13 @@ class AuthenticationTest extends DuskTestCase
     {
         $this->browse(function (Browser $browser) {
             $browser->visit('/login')
-                    ->assertSee('Log in')
+                ->assertSee('Log in')
                     // Remove required attributes so we can test server-side validation
-                    ->script("document.querySelectorAll('[required]').forEach(e => e.removeAttribute('required'));");
+                ->script("document.querySelectorAll('[required]').forEach(e => e.removeAttribute('required'));");
             $browser->press('Log in')
-                    ->waitForLocation('/login')
-                    ->waitForText('The email field is required.')
-                    ->assertSee('The password field is required.');
+                ->waitForLocation('/login')
+                ->waitForText('The email field is required.')
+                ->assertSee('The password field is required.');
         });
     }
 
@@ -117,12 +116,12 @@ class AuthenticationTest extends DuskTestCase
     {
         $this->browse(function (Browser $browser) {
             $browser->visit('/login')
-                    ->assertSee('Log in')
-                    ->type('email', 'invalid@example.com')
-                    ->type('password', 'wrongpassword')
-                    ->press('Log in')
-                    ->waitForText('These credentials do not match our records.')
-                    ->assertSee('These credentials do not match our records.');
+                ->assertSee('Log in')
+                ->type('email', 'invalid@example.com')
+                ->type('password', 'wrongpassword')
+                ->press('Log in')
+                ->waitForText('These credentials do not match our records.')
+                ->assertSee('These credentials do not match our records.');
         });
     }
-} 
+}
