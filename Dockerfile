@@ -20,7 +20,7 @@ FROM php:8.4-apache
 # Install system dependencies
 RUN apt-get update \
     && apt-get install -y libicu-dev libxml2-dev sqlite3 libsqlite3-dev zlib1g-dev libonig-dev \
-        libpq-dev postgresql-client \
+        libpq-dev postgresql-client cron \
     && docker-php-ext-install intl pdo pdo_mysql pdo_sqlite pdo_pgsql mbstring xml \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
