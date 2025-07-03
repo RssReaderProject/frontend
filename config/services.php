@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'rss' => [
+        'url' => env('RSS_SERVICE_URL', 'http://localhost:8080'),
+        'retention_days' => env('RSS_ITEM_RETENTION_DAYS', 30),
+    ],
+
 ];

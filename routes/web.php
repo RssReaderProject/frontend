@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\RssItemController;
 use App\Http\Controllers\RssUrlController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'update' => 'rss.urls.update',
         'destroy' => 'rss.urls.destroy',
     ]);
+
+    Route::patch('/rss/urls/{id}/re-enable', [RssUrlController::class, 'reEnable'])->name('rss.urls.re-enable');
+
+    Route::get('/rss/items', [RssItemController::class, 'index'])->name('rss.items.index');
 });
 
 require __DIR__.'/settings.php';
