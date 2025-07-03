@@ -12,6 +12,7 @@ class RssItem extends Model
 
     protected $fillable = [
         'user_id',
+        'rss_url_id',
         'title',
         'source',
         'source_url',
@@ -30,6 +31,14 @@ class RssItem extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the RSS URL that this item belongs to.
+     */
+    public function rssUrl(): BelongsTo
+    {
+        return $this->belongsTo(RssUrl::class);
     }
 
     /**

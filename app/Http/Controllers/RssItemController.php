@@ -12,13 +12,13 @@ class RssItemController extends Controller
     {
         $user = $request->user();
 
-        $query = RssItem::where('user_id', $user->id);
+        $query = RssItem::with('rssUrl')->where('user_id', $user->id);
 
         // Filter by RSS feed
         if ($request->filled('feed_id')) {
             $feed = RssUrl::where('id', $request->feed_id)->where('user_id', $user->id)->first();
             if ($feed) {
-                $query->where('source_url', $feed->url);
+                $query->where('rss_url_id', $feed->id);
             }
         }
 

@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\User;
+use App\Models\RssUrl;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -30,6 +31,7 @@ class RssItemFactory extends Factory
 
         return [
             'user_id' => User::factory(),
+            'rss_url_id' => null, // Default to null, can be set explicitly
             'title' => $this->faker->sentence(),
             'source' => $source,
             'source_url' => $sourceUrl,
@@ -47,6 +49,17 @@ class RssItemFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'source' => $source,
             'source_url' => $sourceUrl,
+        ]);
+    }
+
+    /**
+     * Indicate that the RSS item belongs to a specific RSS URL.
+     */
+    public function forRssUrl(RssUrl $rssUrl): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'rss_url_id' => $rssUrl->id,
+            'user_id' => $rssUrl->user_id,
         ]);
     }
 

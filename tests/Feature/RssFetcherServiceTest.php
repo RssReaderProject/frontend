@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 
 it('fetches for user with rss urls', function () {
     $user = User::factory()->create();
-    RssUrl::factory()->create([
+    $rssUrl = RssUrl::factory()->create([
         'user_id' => $user->id,
         'url' => 'https://example.com/feed.xml'
     ]);
@@ -35,7 +35,8 @@ it('fetches for user with rss urls', function () {
                     'source_url' => 'https://example.com',
                     'link' => 'https://example.com/article',
                     'publish_date' => now()->toIso8601String(),
-                    'description' => 'Test article description'
+                    'description' => 'Test article description',
+                    'rss_url' => 'https://example.com/feed.xml'
                 ]
             ]
         ], 200)
@@ -43,6 +44,7 @@ it('fetches for user with rss urls', function () {
     (new RssFetcherService())->fetchForUser($user);
     assertDatabaseHas('rss_items', [
         'user_id' => $user->id,
+        'rss_url_id' => $rssUrl->id,
         'title' => 'Test Article',
         'source' => 'Example Site',
         'source_url' => 'https://example.com',
@@ -179,7 +181,8 @@ it('multiple urls deduplication', function () {
                     'source_url' => 'https://example.com/feed1.xml',
                     'link' => 'https://example.com/shared-article',
                     'publish_date' => now()->toIso8601String(),
-                    'description' => 'This article appears in both feeds.'
+                    'description' => 'This article appears in both feeds.',
+                    'rss_url' => 'https://example.com/feed1.xml'
                 ],
                 [
                     'title' => 'Shared Article',
@@ -187,7 +190,8 @@ it('multiple urls deduplication', function () {
                     'source_url' => 'https://example.com/feed2.xml',
                     'link' => 'https://example.com/shared-article',
                     'publish_date' => now()->toIso8601String(),
-                    'description' => 'This article appears in both feeds.'
+                    'description' => 'This article appears in both feeds.',
+                    'rss_url' => 'https://example.com/feed2.xml'
                 ]
             ]
         ], 200)
@@ -198,6 +202,7 @@ it('multiple urls deduplication', function () {
         'user_id' => $user->id,
         'link' => 'https://example.com/shared-article',
         'title' => 'Shared Article',
+        'rss_url_id' => RssUrl::where('url', 'https://example.com/feed1.xml')->first()->id,
     ]);
 });
 
@@ -216,7 +221,8 @@ it('fetcher ignores malformed partial items', function () {
                     'source_url' => 'https://example.com/feed.xml',
                     // 'link' => missing
                     'publish_date' => now()->toIso8601String(),
-                    'description' => 'Missing link.'
+                    'description' => 'Missing link.',
+                    'rss_url' => 'https://example.com/feed.xml'
                 ],
                 [
                     // 'title' => missing
@@ -224,7 +230,8 @@ it('fetcher ignores malformed partial items', function () {
                     'source_url' => 'https://example.com/feed.xml',
                     'link' => 'https://example.com/no-title',
                     'publish_date' => now()->toIso8601String(),
-                    'description' => 'Missing title.'
+                    'description' => 'Missing title.',
+                    'rss_url' => 'https://example.com/feed.xml'
                 ],
                 [
                     'title' => 'Valid',
@@ -232,7 +239,8 @@ it('fetcher ignores malformed partial items', function () {
                     'source_url' => 'https://example.com/feed.xml',
                     'link' => 'https://example.com/valid',
                     'publish_date' => now()->toIso8601String(),
-                    'description' => 'Valid item.'
+                    'description' => 'Valid item.',
+                    'rss_url' => 'https://example.com/feed.xml'
                 ]
             ]
         ], 200)
@@ -242,14 +250,17 @@ it('fetcher ignores malformed partial items', function () {
     assertDatabaseHas('rss_items', [
         'link' => 'https://example.com/valid',
         'title' => 'Valid',
+        'rss_url_id' => RssUrl::where('url', 'https://example.com/feed.xml')->first()->id,
     ]);
     assertDatabaseHas('rss_items', [
         'link' => 'https://example.com/no-title',
         'title' => '',
+        'rss_url_id' => RssUrl::where('url', 'https://example.com/feed.xml')->first()->id,
     ]);
     assertDatabaseHas('rss_items', [
         'title' => 'No Link',
         'link' => '',
+        'rss_url_id' => RssUrl::where('url', 'https://example.com/feed.xml')->first()->id,
     ]);
 });
 
@@ -267,14 +278,23 @@ it('command fetches for all users', function () {
                     'source_url' => 'https://example.com/feed1.xml',
                     'link' => 'https://example.com/article',
                     'publish_date' => now()->toIso8601String(),
-                    'description' => 'Test.'
+                    'description' => 'Test.',
+                    'rss_url' => 'https://example.com/feed1.xml'
                 ]
             ]
         ], 200)
     ]);
     artisan('rss:fetch')->assertExitCode(0);
-    assertDatabaseHas('rss_items', ['user_id' => $user1->id, 'link' => 'https://example.com/article']);
-    assertDatabaseHas('rss_items', ['user_id' => $user2->id, 'link' => 'https://example.com/article']);
+    assertDatabaseHas('rss_items', [
+        'user_id' => $user1->id,
+        'link' => 'https://example.com/article',
+        'rss_url_id' => RssUrl::where('url', 'https://example.com/feed1.xml')->first()->id
+    ]);
+    assertDatabaseMissing('rss_items', [
+        'user_id' => $user2->id,
+        'link' => 'https://example.com/article',
+    ]);
+    assertDatabaseCount('rss_items', 1);
 });
 
 it('command fetches for single user', function () {
@@ -289,13 +309,14 @@ it('command fetches for single user', function () {
                     'source_url' => 'https://example.com/feed.xml',
                     'link' => 'https://example.com/single',
                     'publish_date' => now()->toIso8601String(),
-                    'description' => 'Test.'
+                    'description' => 'Test.',
+                    'rss_url' => 'https://example.com/feed.xml'
                 ]
             ]
         ], 200)
     ]);
     artisan('rss:fetch', ['--user-id' => $user->id])->assertExitCode(0);
-    assertDatabaseHas('rss_items', ['user_id' => $user->id, 'link' => 'https://example.com/single']);
+    assertDatabaseHas('rss_items', ['user_id' => $user->id, 'link' => 'https://example.com/single', 'rss_url_id' => RssUrl::where('url', 'https://example.com/feed.xml')->first()->id]);
 });
 
 it('command stats flag outputs stats', function () {
@@ -361,7 +382,8 @@ it('handles invalid date format in publish_date', function () {
                     'source_url' => 'https://example.com/feed.xml',
                     'link' => 'https://example.com/invalid-date',
                     'publish_date' => 'not-a-date',
-                    'description' => 'Invalid date format.'
+                    'description' => 'Invalid date format.',
+                    'rss_url' => 'https://example.com/feed.xml'
                 ]
             ]
         ], 200)
@@ -371,6 +393,7 @@ it('handles invalid date format in publish_date', function () {
         'link' => 'https://example.com/invalid-date',
         'title' => 'Invalid Date',
         'publish_date' => null,
+        'rss_url_id' => RssUrl::where('url', 'https://example.com/feed.xml')->first()->id,
     ]);
 });
 
@@ -389,7 +412,8 @@ it('handles missing link (empty string) as unique constraint)', function () {
                     'source_url' => 'https://example.com/feed.xml',
                     // 'link' => missing
                     'publish_date' => now()->toIso8601String(),
-                    'description' => 'First missing link.'
+                    'description' => 'First missing link.',
+                    'rss_url' => 'https://example.com/feed.xml'
                 ],
                 [
                     'title' => 'No Link 2',
@@ -397,7 +421,8 @@ it('handles missing link (empty string) as unique constraint)', function () {
                     'source_url' => 'https://example.com/feed.xml',
                     'link' => '',
                     'publish_date' => now()->toIso8601String(),
-                    'description' => 'Second missing link.'
+                    'description' => 'Second missing link.',
+                    'rss_url' => 'https://example.com/feed.xml'
                 ]
             ]
         ], 200)
@@ -408,6 +433,7 @@ it('handles missing link (empty string) as unique constraint)', function () {
     assertDatabaseHas('rss_items', [
         'title' => 'No Link 1',
         'link' => '',
+        'rss_url_id' => RssUrl::where('url', 'https://example.com/feed.xml')->first()->id,
     ]);
 });
 
@@ -426,7 +452,8 @@ it('handles duplicate items with different metadata (same link)', function () {
                     'source_url' => 'https://example.com/feed.xml',
                     'link' => 'https://example.com/dup',
                     'publish_date' => now()->toIso8601String(),
-                    'description' => 'First version.'
+                    'description' => 'First version.',
+                    'rss_url' => 'https://example.com/feed.xml'
                 ],
                 [
                     'title' => 'Title 2',
@@ -434,7 +461,8 @@ it('handles duplicate items with different metadata (same link)', function () {
                     'source_url' => 'https://example.com/feed.xml',
                     'link' => 'https://example.com/dup',
                     'publish_date' => now()->toIso8601String(),
-                    'description' => 'Second version.'
+                    'description' => 'Second version.',
+                    'rss_url' => 'https://example.com/feed.xml'
                 ]
             ]
         ], 200)
@@ -445,6 +473,116 @@ it('handles duplicate items with different metadata (same link)', function () {
     assertDatabaseHas('rss_items', [
         'link' => 'https://example.com/dup',
         'title' => 'Title 1',
-        'description' => 'First version.'
+        'description' => 'First version.',
+        'rss_url_id' => RssUrl::where('url', 'https://example.com/feed.xml')->first()->id,
+    ]);
+});
+
+it('handles items with unknown rss_url gracefully', function () {
+    $user = User::factory()->create();
+    RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/feed.xml'
+    ]);
+    
+    Http::fake([
+        'localhost:8080/rss' => Http::response([
+            'items' => [
+                [
+                    'title' => 'Test Article',
+                    'source' => 'Example Site',
+                    'source_url' => 'https://example.com',
+                    'link' => 'https://example.com/article',
+                    'publish_date' => now()->toIso8601String(),
+                    'description' => 'Test article description',
+                    'rss_url' => 'https://unknown.com/feed.xml' // Unknown URL
+                ]
+            ]
+        ], 200)
+    ]);
+    
+    (new RssFetcherService())->fetchForUser($user);
+    
+    assertDatabaseCount('rss_items', 0);
+});
+
+it('handles items without rss_url field', function () {
+    $user = User::factory()->create();
+    RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/feed.xml'
+    ]);
+    
+    Http::fake([
+        'localhost:8080/rss' => Http::response([
+            'items' => [
+                [
+                    'title' => 'Test Article',
+                    'source' => 'Example Site',
+                    'source_url' => 'https://example.com',
+                    'link' => 'https://example.com/article',
+                    'publish_date' => now()->toIso8601String(),
+                    'description' => 'Test article description'
+                    // No rss_url field
+                ]
+            ]
+        ], 200)
+    ]);
+    
+    (new RssFetcherService())->fetchForUser($user);
+    
+    assertDatabaseCount('rss_items', 0);
+});
+
+it('correctly maps multiple rss_urls to their respective items', function () {
+    $user = User::factory()->create();
+    $rssUrl1 = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/feed1.xml'
+    ]);
+    $rssUrl2 = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/feed2.xml'
+    ]);
+    
+    Http::fake([
+        'localhost:8080/rss' => Http::response([
+            'items' => [
+                [
+                    'title' => 'Article from Feed 1',
+                    'source' => 'Feed 1',
+                    'source_url' => 'https://example.com',
+                    'link' => 'https://example.com/article1',
+                    'publish_date' => now()->toIso8601String(),
+                    'description' => 'From feed 1',
+                    'rss_url' => 'https://example.com/feed1.xml'
+                ],
+                [
+                    'title' => 'Article from Feed 2',
+                    'source' => 'Feed 2',
+                    'source_url' => 'https://example.com',
+                    'link' => 'https://example.com/article2',
+                    'publish_date' => now()->toIso8601String(),
+                    'description' => 'From feed 2',
+                    'rss_url' => 'https://example.com/feed2.xml'
+                ]
+            ]
+        ], 200)
+    ]);
+    
+    (new RssFetcherService())->fetchForUser($user);
+    
+    assertDatabaseHas('rss_items', [
+        'user_id' => $user->id,
+        'rss_url_id' => $rssUrl1->id,
+        'title' => 'Article from Feed 1',
+        'link' => 'https://example.com/article1'
+    ]);
+    
+    assertDatabaseHas('rss_items', [
+        'user_id' => $user->id,
+        'rss_url_id' => $rssUrl2->id,
+        'title' => 'Article from Feed 2',
+        'link' => 'https://example.com/article2'
     ]);
 }); 

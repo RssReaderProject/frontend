@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class RssFetcherService
 {
@@ -82,80 +83,105 @@ class RssFetcherService
      */
     private function processItems(User $user, array $items): void
     {
-        Log::info("Processing items for user {$user->id}", [
-            'items_count' => count($items),
-            'items' => $items
-        ]);
+        DB::transaction(function () use ($user, $items) {
+            Log::info("Processing items for user {$user->id}", [
+                'items_count' => count($items),
+                'items' => $items
+            ]);
 
-        if (empty($items)) {
-            Log::info("No items to process for user {$user->id}");
-            $this->cleanupOldItems($user); // Always run cleanup
-            return;
-        }
-
-        $newItems = [];
-        $updatedCount = 0;
-
-        foreach ($items as $item) {
-            // Check if item already exists using the unique constraint
-            $exists = RssItem::where('user_id', $user->id)
-                ->where('link', $item['link'] ?? '')
-                ->exists();
-
-            if ($exists) {
-                Log::info("Item already exists for user {$user->id}", ['link' => $item['link']]);
-                continue;
+            if (empty($items)) {
+                Log::info("No items to process for user {$user->id}");
+                $this->cleanupOldItems($user); // Always run cleanup
+                return;
             }
 
-            $newItems[] = [
-                'user_id' => $user->id,
-                'title' => $item['title'] ?? '',
-                'source' => $item['source'] ?? '',
-                'source_url' => $item['source_url'] ?? '',
-                'link' => $item['link'] ?? '',
-                'publish_date' => $this->parsePublishDate($item['publish_date'] ?? ''),
-                'description' => $item['description'] ?? '',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
+            // Get all RSS URLs for this user to map URLs to IDs
+            $rssUrls = $user->rssUrls()->get()->keyBy('url');
 
-            $updatedCount++;
-        }
+            $newItems = [];
+            $updatedCount = 0;
 
-        Log::info("Prepared items for insertion", [
-            'user_id' => $user->id,
-            'new_items_count' => count($newItems),
-            'updated_count' => $updatedCount
-        ]);
-
-        // Insert new items in batches, using ignore to handle any race conditions
-        if (!empty($newItems)) {
-            try {
-                $inserted = RssItem::insertOrIgnore($newItems);
-                Log::info("Inserted items for user {$user->id}", ['inserted_count' => $inserted]);
-            } catch (\Exception $e) {
-                Log::error("Failed to insert items for user {$user->id}", [
-                    'error' => $e->getMessage(),
-                    'items_count' => count($newItems)
-                ]);
-                // If insertOrIgnore fails due to unique constraint, try individual inserts
-                foreach ($newItems as $item) {
-                    try {
-                        RssItem::create($item);
-                    } catch (\Exception $insertException) {
-                        // Log but continue with other items
-                        Log::warning("Failed to insert RSS item", [
-                            'user_id' => $user->id,
-                            'link' => $item['link'],
-                            'error' => $insertException->getMessage()
+            foreach ($items as $item) {
+                // Find the RSS URL ID based on the rss_url from the API response
+                $rssUrlId = null;
+                if (isset($item['rss_url'])) {
+                    $rssUrl = $rssUrls->get($item['rss_url']);
+                    if ($rssUrl) {
+                        $rssUrlId = $rssUrl->id;
+                    } else {
+                        Log::warning("RSS URL not found for user {$user->id}", [
+                            'rss_url' => $item['rss_url'],
+                            'available_urls' => $rssUrls->keys()->toArray()
                         ]);
                     }
                 }
-            }
-        }
 
-        // Clean up old items
-        $this->cleanupOldItems($user);
+                // Only create the item if rss_url_id is found (i.e., the item belongs to one of the user's feeds)
+                if ($rssUrlId === null) {
+                    continue;
+                }
+
+                // Check if item already exists using the unique constraint
+                $exists = RssItem::where('user_id', $user->id)
+                    ->where('link', $item['link'] ?? '')
+                    ->exists();
+
+                if ($exists) {
+                    Log::info("Item already exists for user {$user->id}", ['link' => $item['link']]);
+                    continue;
+                }
+
+                $newItems[] = [
+                    'user_id' => $user->id,
+                    'rss_url_id' => $rssUrlId,
+                    'title' => $item['title'] ?? '',
+                    'source' => $item['source'] ?? '',
+                    'source_url' => $item['source_url'] ?? '',
+                    'link' => $item['link'] ?? '',
+                    'publish_date' => $this->parsePublishDate($item['publish_date'] ?? ''),
+                    'description' => $item['description'] ?? '',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+
+                $updatedCount++;
+            }
+
+            Log::info("Prepared items for insertion", [
+                'user_id' => $user->id,
+                'new_items_count' => count($newItems),
+                'updated_count' => $updatedCount
+            ]);
+
+            // Insert new items in batches, using ignore to handle any race conditions
+            if (!empty($newItems)) {
+                try {
+                    $inserted = RssItem::insertOrIgnore($newItems);
+                    Log::info("Inserted items for user {$user->id}", ['inserted_count' => $inserted]);
+                } catch (\Exception $e) {
+                    Log::error("Failed to insert items for user {$user->id}", [
+                        'error' => $e->getMessage(),
+                        'items_count' => count($newItems)
+                    ]);
+                    // If insertOrIgnore fails due to unique constraint, try individual inserts
+                    foreach ($newItems as $item) {
+                        try {
+                            RssItem::create($item);
+                        } catch (\Exception $insertException) {
+                            // Log but continue with other items
+                            Log::warning("Failed to insert RSS item", [
+                                'user_id' => $user->id,
+                                'link' => $item['link'],
+                                'error' => $insertException->getMessage()
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            // Clean up old items
+            $this->cleanupOldItems($user);
+        });
 
         Log::info("Processed RSS items for user {$user->id}", [
             'new_items' => $updatedCount,

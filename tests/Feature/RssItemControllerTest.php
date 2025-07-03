@@ -86,12 +86,8 @@ test('can filter rss items by feed', function () {
     $feed = RssUrl::factory()->forUser($this->user)->create(['url' => 'https://example.com/feed']);
     $otherFeed = RssUrl::factory()->forUser($this->user)->create(['url' => 'https://other.com/feed']);
     
-    $matchingItem = RssItem::factory()->forUser($this->user)->create([
-        'source_url' => 'https://example.com/feed'
-    ]);
-    $nonMatchingItem = RssItem::factory()->forUser($this->user)->create([
-        'source_url' => 'https://other.com/feed'
-    ]);
+    $matchingItem = RssItem::factory()->forUser($this->user)->forRssUrl($feed)->create();
+    $nonMatchingItem = RssItem::factory()->forUser($this->user)->forRssUrl($otherFeed)->create();
 
     $response = $this->actingAs($this->user)->get(route('rss.items.index', ['feed_id' => $feed->id]));
 

@@ -67,6 +67,12 @@
                                     <p class="mb-1 text-muted small">
                                         <i class="bi bi-rss me-1"></i>
                                         {{ $item->source }}
+                                        @if($item->rssUrl)
+                                            <span class="ms-2">
+                                                <i class="bi bi-link-45deg me-1"></i>
+                                                <span class="text-info">{{ $item->rssUrl->url }}</span>
+                                            </span>
+                                        @endif
                                         @if($item->publish_date)
                                             <span class="ms-2">
                                                 <i class="bi bi-calendar3 me-1"></i>
