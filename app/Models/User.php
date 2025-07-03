@@ -54,4 +54,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(RssUrl::class);
     }
+
+    /**
+     * Get the RSS items for the user.
+     */
+    public function rssItems(): HasMany
+    {
+        return $this->hasMany(RssItem::class);
+    }
 }
