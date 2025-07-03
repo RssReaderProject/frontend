@@ -4,46 +4,35 @@
 
 @section('content')
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="d-flex align-items-center mb-4">
-                <a href="{{ route('rss.urls.index') }}" class="btn btn-outline-secondary me-3">
-                    <i class="bi bi-arrow-left"></i> Back to RSS URLs
+        <div class="col-md-8 col-lg-6">
+            <x-page-header title="Add RSS URL" subtitle="Add a new RSS feed to your collection">
+                <a href="{{ route('rss.urls.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Back to RSS URLs
                 </a>
-                <h1 class="h2 mb-0">Add RSS URL</h1>
-            </div>
+            </x-page-header>
 
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <form action="{{ route('rss.urls.store') }}" method="POST">
-                        @csrf
-                        
-                        <div class="mb-3">
-                            <label for="url" class="form-label">RSS URL</label>
-                            <input type="url" 
-                                   class="form-control @error('url') is-invalid @enderror"
-                                   name="url" 
-                                   id="url" 
-                                   value="{{ old('url') }}"
-                                   placeholder="https://example.com/feed.xml"
-                                   required>
-                            @error('url')
-                                <div class="invalid-feedback">
-                                    {{ $message }}
-                                </div>
-                            @enderror
-                        </div>
+            <x-form-card>
+                <form action="{{ route('rss.urls.store') }}" method="POST">
+                    @csrf
+                    
+                    <x-form-input 
+                        name="url" 
+                        label="RSS URL" 
+                        type="url" 
+                        placeholder="https://example.com/feed.xml"
+                        required
+                    />
 
-                        <div class="d-flex justify-content-end gap-2">
-                            <a href="{{ route('rss.urls.index') }}" class="btn btn-secondary">
-                                Cancel
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                Add RSS URL
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ route('rss.urls.index') }}" class="btn btn-secondary">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i> Add RSS URL
+                        </button>
+                    </div>
+                </form>
+            </x-form-card>
         </div>
     </div>
 @endsection 
