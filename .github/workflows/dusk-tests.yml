@@ -65,7 +65,9 @@ jobs:
           php artisan migrate --force
 
       - name: Start Laravel Development Server
-        run: php artisan serve --host=0.0.0.0 --port=8000 &
+        run: |
+          php artisan serve --host=0.0.0.0 --port=8000 > /dev/null 2>&1 &
+          echo "Laravel server started in background"
         env:
           APP_ENV: testing
           APP_URL: http://localhost:8000
@@ -74,17 +76,28 @@ jobs:
 
       - name: Wait for Laravel Server
         run: |
+          sleep 5
           timeout 30 bash -c 'until curl -f http://localhost:8000; do sleep 1; done'
+          echo "Laravel server is running on http://localhost:8000"
+          echo "Testing connection from runner:"
+          curl -v http://localhost:8000
 
       - name: Wait for Selenium
         run: |
           timeout 60 bash -c 'until curl -f http://localhost:4444/wd/hub/status; do sleep 2; done'
+          echo "Selenium is running"
+          echo "Testing if Selenium can access Laravel server:"
+          curl -v http://host.docker.internal:8000 || echo "host.docker.internal not accessible"
 
       - name: Run Dusk Tests
-        run: php artisan dusk
+        run: |
+          # Get the runner's IP address
+          RUNNER_IP=$(hostname -I | awk '{print $1}')
+          echo "Runner IP: $RUNNER_IP"
+          echo "Setting APP_URL to http://$RUNNER_IP:8000"
+          APP_URL="http://$RUNNER_IP:8000" php artisan dusk
         env:
           APP_ENV: testing
-          APP_URL: http://localhost:8000
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
           DUSK_DRIVER_URL: http://localhost:4444/wd/hub
