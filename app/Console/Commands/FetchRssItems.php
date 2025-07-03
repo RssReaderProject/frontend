@@ -33,6 +33,7 @@ class FetchRssItems extends Command
         if ($this->option('stats')) {
             $stats = $rssFetcher->getStats();
             $this->displayStats($stats);
+
             return self::SUCCESS;
         }
 
@@ -52,8 +53,9 @@ class FetchRssItems extends Command
     {
         $user = User::find($userId);
 
-        if (!$user) {
+        if (! $user) {
             $this->error("User with ID {$userId} not found.");
+
             return self::FAILURE;
         }
 
@@ -61,6 +63,7 @@ class FetchRssItems extends Command
 
         if ($user->rssUrls->isEmpty()) {
             $this->warn("User {$user->name} has no RSS URLs configured.");
+
             return self::SUCCESS;
         }
 
@@ -69,9 +72,11 @@ class FetchRssItems extends Command
         try {
             $rssFetcher->fetchForUser($user);
             $this->info("Successfully fetched RSS items for user {$user->name}");
+
             return self::SUCCESS;
         } catch (\Exception $e) {
             $this->error("Failed to fetch RSS items for user {$user->name}: {$e->getMessage()}");
+
             return self::FAILURE;
         }
     }
@@ -87,21 +92,23 @@ class FetchRssItems extends Command
         $this->info("Found {$usersWithRss} users with RSS URLs out of {$totalUsers} total users");
 
         if ($usersWithRss === 0) {
-            $this->warn("No users have RSS URLs configured.");
+            $this->warn('No users have RSS URLs configured.');
+
             return self::SUCCESS;
         }
 
         try {
             $rssFetcher->fetchForAllUsers();
-            $this->info("Successfully fetched RSS items for all users");
-            
+            $this->info('Successfully fetched RSS items for all users');
+
             // Show final statistics
             $stats = $rssFetcher->getStats();
             $this->displayStats($stats);
-            
+
             return self::SUCCESS;
         } catch (\Exception $e) {
             $this->error("Failed to fetch RSS items: {$e->getMessage()}");
+
             return self::FAILURE;
         }
     }
@@ -125,4 +132,4 @@ class FetchRssItems extends Command
             ]
         );
     }
-} 
+}

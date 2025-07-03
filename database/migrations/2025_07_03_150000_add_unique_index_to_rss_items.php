@@ -26,4 +26,4 @@ return new class extends Migration
             $table->dropUnique('rss_items_user_link_unique');
         });
     }
-}; 
+};

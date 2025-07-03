@@ -5,14 +5,15 @@ namespace App\Services;
 use App\Models\RssItem;
 use App\Models\RssUrl;
 use App\Models\User;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class RssFetcherService
 {
     private string $serviceUrl;
+
     private int $retentionDays;
 
     public function __construct()
@@ -27,12 +28,12 @@ class RssFetcherService
     public function fetchForAllUsers(): void
     {
         $users = User::with('rssUrls')->get();
-        
+
         foreach ($users as $user) {
             if ($user->rssUrls->isEmpty()) {
                 continue;
             }
-            
+
             $this->fetchForUser($user);
         }
     }
@@ -44,17 +45,18 @@ class RssFetcherService
     {
         // Get only active RSS URLs (not disabled and not in cooldown)
         $activeUrls = RssUrl::activeForUser($user);
-        
+
         if ($activeUrls->isEmpty()) {
             Log::info("No active RSS URLs found for user {$user->id} (all URLs are disabled or in cooldown)");
+
             return;
         }
 
         $urls = $activeUrls->pluck('url')->toArray();
-        
+
         try {
-            $response = Http::timeout(30)->post($this->serviceUrl . '/rss', [
-                'urls' => $urls
+            $response = Http::timeout(30)->post($this->serviceUrl.'/rss', [
+                'urls' => $urls,
             ]);
 
             if ($response->successful()) {
@@ -62,12 +64,12 @@ class RssFetcherService
                 $this->processItems($user, $data['items'] ?? [], $activeUrls);
                 Log::info("Successfully fetched RSS items for user {$user->id}", [
                     'urls_count' => count($urls),
-                    'items_count' => count($data['items'] ?? [])
+                    'items_count' => count($data['items'] ?? []),
                 ]);
             } else {
                 Log::error("Failed to fetch RSS items for user {$user->id}", [
                     'status' => $response->status(),
-                    'response' => $response->body()
+                    'response' => $response->body(),
                 ]);
                 // Record failure for all attempted URLs
                 foreach ($activeUrls as $rssUrl) {
@@ -77,7 +79,7 @@ class RssFetcherService
         } catch (\Exception $e) {
             Log::error("Exception while fetching RSS items for user {$user->id}", [
                 'error' => $e->getMessage(),
-                'urls' => $urls
+                'urls' => $urls,
             ]);
             // Record failure for all attempted URLs
             foreach ($activeUrls as $rssUrl) {
@@ -98,12 +100,13 @@ class RssFetcherService
         DB::transaction(function () use ($user, $items, &$successfulUrlKeys, &$updatedCount) {
             Log::info("Processing items for user {$user->id}", [
                 'items_count' => count($items),
-                'items' => $items
+                'items' => $items,
             ]);
 
             if (empty($items)) {
                 Log::info("No items to process for user {$user->id}");
                 $this->cleanupOldItems($user); // Always run cleanup
+
                 return;
             }
 
@@ -124,7 +127,7 @@ class RssFetcherService
                     } else {
                         Log::warning("RSS URL not found for user {$user->id}", [
                             'rss_url' => $item['rss_url'],
-                            'available_urls' => $rssUrls->keys()->toArray()
+                            'available_urls' => $rssUrls->keys()->toArray(),
                         ]);
                     }
                 }
@@ -141,6 +144,7 @@ class RssFetcherService
 
                 if ($exists) {
                     Log::info("Item already exists for user {$user->id}", ['link' => $item['link']]);
+
                     continue;
                 }
 
@@ -160,21 +164,21 @@ class RssFetcherService
                 $updatedCount++;
             }
 
-            Log::info("Prepared items for insertion", [
+            Log::info('Prepared items for insertion', [
                 'user_id' => $user->id,
                 'new_items_count' => count($newItems),
-                'updated_count' => $updatedCount
+                'updated_count' => $updatedCount,
             ]);
 
             // Insert new items in batches, using ignore to handle any race conditions
-            if (!empty($newItems)) {
+            if (! empty($newItems)) {
                 try {
                     $inserted = RssItem::insertOrIgnore($newItems);
                     Log::info("Inserted items for user {$user->id}", ['inserted_count' => $inserted]);
                 } catch (\Exception $e) {
                     Log::error("Failed to insert items for user {$user->id}", [
                         'error' => $e->getMessage(),
-                        'items_count' => count($newItems)
+                        'items_count' => count($newItems),
                     ]);
                     // If insertOrIgnore fails due to unique constraint, try individual inserts
                     foreach ($newItems as $item) {
@@ -182,10 +186,10 @@ class RssFetcherService
                             RssItem::create($item);
                         } catch (\Exception $insertException) {
                             // Log but continue with other items
-                            Log::warning("Failed to insert RSS item", [
+                            Log::warning('Failed to insert RSS item', [
                                 'user_id' => $user->id,
                                 'link' => $item['link'],
-                                'error' => $insertException->getMessage()
+                                'error' => $insertException->getMessage(),
                             ]);
                         }
                     }
@@ -204,7 +208,7 @@ class RssFetcherService
 
         Log::info("Processed RSS items for user {$user->id}", [
             'new_items' => $updatedCount,
-            'total_items' => count($items)
+            'total_items' => count($items),
         ]);
     }
 
@@ -219,9 +223,11 @@ class RssFetcherService
 
         try {
             $date = new \DateTime($dateString);
+
             return $date->format('Y-m-d H:i:s');
         } catch (\Exception $e) {
             Log::warning("Failed to parse publish date: {$dateString}");
+
             return null;
         }
     }
@@ -232,7 +238,7 @@ class RssFetcherService
     private function cleanupOldItems(User $user): void
     {
         $cutoffDate = now()->subDays($this->retentionDays);
-        
+
         $deletedCount = RssItem::where('user_id', $user->id)
             ->where('publish_date', '<', $cutoffDate)
             ->delete();
@@ -261,4 +267,4 @@ class RssFetcherService
             'retention_days' => $this->retentionDays,
         ];
     }
-} 
+}

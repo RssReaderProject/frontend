@@ -275,11 +275,11 @@ test('active scope returns only active URLs', function () {
         'last_failure_at' => now()->subDays(2),
         'disabled_at' => null,
     ]);
-    
+
     $activeUrls = RssUrl::activeForUser($this->user);
-    
+
     $activeUrlIds = $activeUrls->pluck('id')->toArray();
-    
+
     expect($activeUrlIds)->toContain($active->id);
     expect($activeUrlIds)->toContain($out_of_cooldown->id);
     expect($activeUrlIds)->not->toContain($cooldown->id);

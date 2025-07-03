@@ -111,7 +111,7 @@ class RssUrlController extends Controller
             abort(404);
         }
 
-        if (!$rssUrl->is_disabled) {
+        if (! $rssUrl->is_disabled) {
             return redirect()->route('rss.urls.index')
                 ->with('info', 'RSS URL is already active.');
         }

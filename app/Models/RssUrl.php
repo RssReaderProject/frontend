@@ -13,11 +13,11 @@ class RssUrl extends Model
     use HasFactory;
 
     protected $fillable = [
-        'url', 
-        'user_id', 
-        'consecutive_failures', 
-        'last_failure_at', 
-        'disabled_at'
+        'url',
+        'user_id',
+        'consecutive_failures',
+        'last_failure_at',
+        'disabled_at',
     ];
 
     protected $casts = [
@@ -96,7 +96,7 @@ class RssUrl extends Model
     public function recordFailure(): void
     {
         $newFailureCount = $this->consecutive_failures + 1;
-        
+
         $updateData = [
             'consecutive_failures' => $newFailureCount,
             'last_failure_at' => now(),
@@ -129,16 +129,16 @@ class RssUrl extends Model
     {
         return $query->where(function ($q) {
             $q->whereNull('disabled_at')
-              ->where(function ($subQ) {
-                  // Either less than 3 failures, or last failure was more than 1 day ago, or less than 10 failures
-                  $subQ->where('consecutive_failures', '<', 3)
-                       ->orWhereNull('last_failure_at')
-                       ->orWhere(function ($q2) {
-                           $q2->where('consecutive_failures', '>=', 3)
-                              ->where('consecutive_failures', '<', 10)
-                              ->where('last_failure_at', '<', now()->subDay());
-                       });
-              });
+                ->where(function ($subQ) {
+                    // Either less than 3 failures, or last failure was more than 1 day ago, or less than 10 failures
+                    $subQ->where('consecutive_failures', '<', 3)
+                        ->orWhereNull('last_failure_at')
+                        ->orWhere(function ($q2) {
+                            $q2->where('consecutive_failures', '>=', 3)
+                                ->where('consecutive_failures', '<', 10)
+                                ->where('last_failure_at', '<', now()->subDay());
+                        });
+                });
         });
     }
 

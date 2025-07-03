@@ -56,7 +56,7 @@ class RssUrlObserver
     {
         // Use a static flag to ensure we only schedule once per request
         static $scheduled = false;
-        
+
         if ($scheduled) {
             return;
         }
@@ -70,10 +70,10 @@ class RssUrlObserver
                 $fetcher->fetchForUser($rssUrl->user);
             } catch (\Exception $e) {
                 // Log the error but don't throw it since this is happening after response
-                \Log::error('Failed to fetch RSS after URL change: ' . $e->getMessage(), [
+                \Log::error('Failed to fetch RSS after URL change: '.$e->getMessage(), [
                     'user_id' => $rssUrl->user_id,
                     'url_id' => $rssUrl->id,
-                    'url' => $rssUrl->url
+                    'url' => $rssUrl->url,
                 ]);
             }
         });

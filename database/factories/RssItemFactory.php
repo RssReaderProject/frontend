@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
 use App\Models\RssUrl;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

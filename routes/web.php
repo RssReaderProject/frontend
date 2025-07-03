@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\RssUrlController;
 use App\Http\Controllers\RssItemController;
+use App\Http\Controllers\RssUrlController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {

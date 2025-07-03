@@ -31,7 +31,7 @@ test('unauthenticated user cannot access rss items index', function () {
 test('rss items index shows only user items', function () {
     // Create items for the user
     $userItem = RssItem::factory()->forUser($this->user)->create(['title' => 'User Item']);
-    
+
     // Create items for another user
     $otherItem = RssItem::factory()->forUser($this->otherUser)->create(['title' => 'Other Item']);
 
@@ -39,7 +39,7 @@ test('rss items index shows only user items', function () {
 
     $response->assertStatus(200);
     $response->assertViewHas('items', function ($items) use ($userItem, $otherItem) {
-        return $items->contains($userItem) && !$items->contains($otherItem);
+        return $items->contains($userItem) && ! $items->contains($otherItem);
     });
 });
 
@@ -54,6 +54,7 @@ test('rss items are ordered by publish date desc', function () {
     $response->assertViewHas('items', function ($items) use ($newItem, $middleItem, $oldItem) {
         $itemIds = $items->pluck('id')->toArray();
         $expectedOrder = [$newItem->id, $middleItem->id, $oldItem->id];
+
         return $itemIds === $expectedOrder;
     });
 });
@@ -66,7 +67,7 @@ test('can filter rss items by title', function () {
 
     $response->assertStatus(200);
     $response->assertViewHas('items', function ($items) use ($matchingItem, $nonMatchingItem) {
-        return $items->contains($matchingItem) && !$items->contains($nonMatchingItem);
+        return $items->contains($matchingItem) && ! $items->contains($nonMatchingItem);
     });
 });
 
@@ -78,14 +79,14 @@ test('can filter rss items by date', function () {
 
     $response->assertStatus(200);
     $response->assertViewHas('items', function ($items) use ($todayItem, $yesterdayItem) {
-        return $items->contains($todayItem) && !$items->contains($yesterdayItem);
+        return $items->contains($todayItem) && ! $items->contains($yesterdayItem);
     });
 });
 
 test('can filter rss items by feed', function () {
     $feed = RssUrl::factory()->forUser($this->user)->create(['url' => 'https://example.com/feed']);
     $otherFeed = RssUrl::factory()->forUser($this->user)->create(['url' => 'https://other.com/feed']);
-    
+
     $matchingItem = RssItem::factory()->forUser($this->user)->forRssUrl($feed)->create();
     $nonMatchingItem = RssItem::factory()->forUser($this->user)->forRssUrl($otherFeed)->create();
 
@@ -93,7 +94,7 @@ test('can filter rss items by feed', function () {
 
     $response->assertStatus(200);
     $response->assertViewHas('items', function ($items) use ($matchingItem, $nonMatchingItem) {
-        return $items->contains($matchingItem) && !$items->contains($nonMatchingItem);
+        return $items->contains($matchingItem) && ! $items->contains($nonMatchingItem);
     });
 });
 
@@ -128,7 +129,7 @@ test('rss items index shows feeds for user', function () {
 
     $response->assertStatus(200);
     $response->assertViewHas('feeds', function ($feeds) use ($userFeed, $otherUserFeed) {
-        return $feeds->contains($userFeed) && !$feeds->contains($otherUserFeed);
+        return $feeds->contains($userFeed) && ! $feeds->contains($otherUserFeed);
     });
 });
 
@@ -136,14 +137,14 @@ test('rss items index shows filters in view', function () {
     $response = $this->actingAs($this->user)->get(route('rss.items.index', [
         'feed_id' => 1,
         'date' => '2023-01-01',
-        'title' => 'test'
+        'title' => 'test',
     ]));
 
     $response->assertStatus(200);
     $response->assertViewHas('filters', [
         'feed_id' => '1',
         'date' => '2023-01-01',
-        'title' => 'test'
+        'title' => 'test',
     ]);
 });
 
@@ -157,4 +158,4 @@ test('rss items index paginates results', function () {
     $response->assertViewHas('items', function ($items) {
         return $items->count() === 20; // Default pagination
     });
-}); 
+});

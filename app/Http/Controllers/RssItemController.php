@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\RssItem;
 use App\Models\RssUrl;
+use Illuminate\Http\Request;
 
 class RssItemController extends Controller
 {
@@ -29,7 +29,7 @@ class RssItemController extends Controller
 
         // Filter by title
         if ($request->filled('title')) {
-            $query->where('title', 'like', '%' . $request->title . '%');
+            $query->where('title', 'like', '%'.$request->title.'%');
         }
 
         $items = $query->orderByDesc('publish_date')->paginate(20);
@@ -38,7 +38,7 @@ class RssItemController extends Controller
         return view('rss.items.index', [
             'items' => $items,
             'feeds' => $feeds,
-            'filters' => $request->only(['feed_id', 'date', 'title'])
+            'filters' => $request->only(['feed_id', 'date', 'title']),
         ]);
     }
-} 
+}

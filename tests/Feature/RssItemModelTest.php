@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\User;
-use App\Models\RssUrl;
 use App\Models\RssItem;
+use App\Models\RssUrl;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -11,7 +11,7 @@ describe('RssItem Model', function () {
     it('can be created with rss_url_id', function () {
         $user = User::factory()->create();
         $rssUrl = RssUrl::factory()->create(['user_id' => $user->id]);
-        
+
         $item = RssItem::factory()->create([
             'user_id' => $user->id,
             'rss_url_id' => $rssUrl->id,
@@ -24,7 +24,7 @@ describe('RssItem Model', function () {
 
     it('can be created without rss_url_id', function () {
         $user = User::factory()->create();
-        
+
         $item = RssItem::factory()->create([
             'user_id' => $user->id,
             'rss_url_id' => null,
@@ -90,7 +90,7 @@ describe('RssItem Model', function () {
         $user = User::factory()->create();
         $rssUrl1 = RssUrl::factory()->create(['user_id' => $user->id]);
         $rssUrl2 = RssUrl::factory()->create(['user_id' => $user->id]);
-        
+
         $item1 = RssItem::factory()->create([
             'user_id' => $user->id,
             'rss_url_id' => $rssUrl1->id,
@@ -101,7 +101,7 @@ describe('RssItem Model', function () {
         ]);
 
         $filteredItems = RssItem::where('rss_url_id', $rssUrl1->id)->get();
-        
+
         expect($filteredItems)->toHaveCount(1);
         expect($filteredItems->first()->id)->toBe($item1->id);
     });
@@ -115,8 +115,8 @@ describe('RssItem Model', function () {
         ]);
 
         $item = RssItem::with('rssUrl')->where('user_id', $user->id)->first();
-        
+
         expect($item->rssUrl)->toBeInstanceOf(RssUrl::class);
         expect($item->rssUrl->id)->toBe($rssUrl->id);
     });
-}); 
+});

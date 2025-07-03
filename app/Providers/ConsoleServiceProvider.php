@@ -22,7 +22,7 @@ class ConsoleServiceProvider extends ServiceProvider
     {
         $this->app->booted(function () {
             $schedule = $this->app->make(Schedule::class);
-            
+
             // Schedule RSS fetch to run every hour
             $schedule->command('rss:fetch')
                 ->hourly()
@@ -33,4 +33,4 @@ class ConsoleServiceProvider extends ServiceProvider
                 });
         });
     }
-} 
+}
