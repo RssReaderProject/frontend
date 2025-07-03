@@ -24,7 +24,7 @@ class RssUrl extends Model
     /**
      * Get all RSS URLs for a user, ordered latest first.
      */
-    public static function forUser($user): Collection
+    public static function forUser(?User $user): Collection
     {
         if (! $user) {
             return collect();
