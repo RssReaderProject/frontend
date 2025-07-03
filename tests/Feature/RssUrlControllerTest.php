@@ -12,11 +12,18 @@ beforeEach(function () {
 
 test('index displays only user rss urls', function () {
     // Create RSS URLs for the authenticated user
-    $userRssUrls = RssUrl::factory()->count(3)->forUser($this->user)->create();
+    $userRssUrls = RssUrl::factory()->count(3)->forUser($this->user)->sequence(
+        ['url' => 'https://user1-url1.com/feed.xml'],
+        ['url' => 'https://user1-url2.com/feed.xml'],
+        ['url' => 'https://user1-url3.com/feed.xml'],
+    )->create();
 
     // Create RSS URLs for another user
     $otherUser = User::factory()->create();
-    $otherUserRssUrls = RssUrl::factory()->count(2)->forUser($otherUser)->create();
+    $otherUserRssUrls = RssUrl::factory()->count(2)->forUser($otherUser)->sequence(
+        ['url' => 'https://otheruser-url1.com/atom.xml'],
+        ['url' => 'https://otheruser-url2.com/rss.xml'],
+    )->create();
 
     $response = $this->actingAs($this->user)->get('/rss/urls');
 

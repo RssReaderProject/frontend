@@ -59,4 +59,14 @@ class RssItemFactory extends Factory
             'publish_date' => $this->faker->dateTimeBetween('-7 days', 'now'),
         ]);
     }
+
+    /**
+     * Indicate that the RSS item belongs to a specific user.
+     */
+    public function forUser(User $user): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => $user->id,
+        ]);
+    }
 }

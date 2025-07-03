@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection as SupportCollection;
 
 class RssItem extends Model
 {
@@ -36,7 +37,7 @@ class RssItem extends Model
     /**
      * Get all RSS items for a user, ordered by publish date (latest first).
      */
-    public static function forUser($user): Collection
+    public static function forUser(?User $user): \Illuminate\Support\Collection
     {
         if (! $user) {
             return collect();
@@ -56,23 +57,9 @@ class RssItem extends Model
     }
 
     /**
-     * Get RSS items for a user with pagination, ordered by publish date (latest first).
-     */
-    public static function forUserPaginated($user, $perPage = 20)
-    {
-        if (! $user) {
-            return collect();
-        }
-
-        return static::where('user_id', $user->id)
-            ->orderBy('publish_date', 'desc')
-            ->paginate($perPage);
-    }
-
-    /**
      * Get recent RSS items for a user (last 7 days).
      */
-    public static function recentForUser($user, $days = 7): Collection
+    public static function recentForUser(?User $user, $days = 7): \Illuminate\Support\Collection
     {
         if (! $user) {
             return collect();
