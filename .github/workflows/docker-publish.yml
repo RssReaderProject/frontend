@@ -61,7 +61,7 @@ jobs:
           # Start the container
           CONTAINER_ID=$(docker run -d -p 8080:80 $LATEST_TAG)
           echo "Waiting for container to start..."
-          sleep 10
+          sleep 60
           if ! docker ps | grep -q $CONTAINER_ID; then
             echo "Container failed to start"
             docker logs $CONTAINER_ID
