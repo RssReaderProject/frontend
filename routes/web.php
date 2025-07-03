@@ -23,6 +23,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'destroy' => 'rss.urls.destroy',
     ]);
 
+    Route::patch('/rss/urls/{id}/re-enable', [RssUrlController::class, 'reEnable'])->name('rss.urls.re-enable');
+
     Route::get('/rss/items', [RssItemController::class, 'index'])->name('rss.items.index');
 });
 

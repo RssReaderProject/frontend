@@ -42,15 +42,15 @@ class RssFetcherService
      */
     public function fetchForUser(User $user): void
     {
-        // Always fetch the latest RSS URLs from the database
-        $rssUrls = $user->rssUrls()->get();
+        // Get only active RSS URLs (not disabled and not in cooldown)
+        $activeUrls = RssUrl::activeForUser($user);
         
-        if ($rssUrls->isEmpty()) {
-            Log::info("No RSS URLs found for user {$user->id}");
+        if ($activeUrls->isEmpty()) {
+            Log::info("No active RSS URLs found for user {$user->id} (all URLs are disabled or in cooldown)");
             return;
         }
 
-        $urls = $rssUrls->pluck('url')->toArray();
+        $urls = $activeUrls->pluck('url')->toArray();
         
         try {
             $response = Http::timeout(30)->post($this->serviceUrl . '/rss', [
@@ -59,7 +59,7 @@ class RssFetcherService
 
             if ($response->successful()) {
                 $data = $response->json();
-                $this->processItems($user, $data['items'] ?? []);
+                $this->processItems($user, $data['items'] ?? [], $activeUrls);
                 Log::info("Successfully fetched RSS items for user {$user->id}", [
                     'urls_count' => count($urls),
                     'items_count' => count($data['items'] ?? [])
@@ -69,21 +69,33 @@ class RssFetcherService
                     'status' => $response->status(),
                     'response' => $response->body()
                 ]);
+                // Record failure for all attempted URLs
+                foreach ($activeUrls as $rssUrl) {
+                    $rssUrl->recordFailure();
+                }
             }
         } catch (\Exception $e) {
             Log::error("Exception while fetching RSS items for user {$user->id}", [
                 'error' => $e->getMessage(),
                 'urls' => $urls
             ]);
+            // Record failure for all attempted URLs
+            foreach ($activeUrls as $rssUrl) {
+                $rssUrl->recordFailure();
+            }
         }
     }
 
     /**
      * Process RSS items and update database intelligently
      */
-    private function processItems(User $user, array $items): void
+    private function processItems(User $user, array $items, Collection $activeUrls): void
     {
-        DB::transaction(function () use ($user, $items) {
+        // Track unique URLs that returned items
+        $successfulUrlKeys = collect();
+        $updatedCount = 0;
+
+        DB::transaction(function () use ($user, $items, &$successfulUrlKeys, &$updatedCount) {
             Log::info("Processing items for user {$user->id}", [
                 'items_count' => count($items),
                 'items' => $items
@@ -99,7 +111,6 @@ class RssFetcherService
             $rssUrls = $user->rssUrls()->get()->keyBy('url');
 
             $newItems = [];
-            $updatedCount = 0;
 
             foreach ($items as $item) {
                 // Find the RSS URL ID based on the rss_url from the API response
@@ -108,6 +119,8 @@ class RssFetcherService
                     $rssUrl = $rssUrls->get($item['rss_url']);
                     if ($rssUrl) {
                         $rssUrlId = $rssUrl->id;
+                        // Track this URL as successfully returning items (only once)
+                        $successfulUrlKeys->put($item['rss_url'], $rssUrl);
                     } else {
                         Log::warning("RSS URL not found for user {$user->id}", [
                             'rss_url' => $item['rss_url'],
@@ -182,6 +195,12 @@ class RssFetcherService
             // Clean up old items
             $this->cleanupOldItems($user);
         });
+
+        // Call recordSuccess() outside the transaction to ensure updates are visible after the transaction
+        foreach ($successfulUrlKeys as $rssUrl) {
+            // Call recordSuccess for each unique URL that returned items
+            $rssUrl->recordSuccess();
+        }
 
         Log::info("Processed RSS items for user {$user->id}", [
             'new_items' => $updatedCount,

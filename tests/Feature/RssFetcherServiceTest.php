@@ -585,4 +585,275 @@ it('correctly maps multiple rss_urls to their respective items', function () {
         'title' => 'Article from Feed 2',
         'link' => 'https://example.com/article2'
     ]);
+});
+
+// Failure Management Tests
+
+it('records failures for all URLs when HTTP request fails', function () {
+    $user = User::factory()->create();
+    $rssUrl1 = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/feed1.xml'
+    ]);
+    $rssUrl2 = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/feed2.xml'
+    ]);
+    
+    Http::fake([
+        'localhost:8080/rss' => Http::response([], 500) // Server error
+    ]);
+    
+    (new RssFetcherService())->fetchForUser($user);
+    
+    $rssUrl1->refresh();
+    $rssUrl2->refresh();
+    
+    expect($rssUrl1->consecutive_failures)->toBe(1);
+    expect($rssUrl1->last_failure_at)->not->toBeNull();
+    expect($rssUrl2->consecutive_failures)->toBe(1);
+    expect($rssUrl2->last_failure_at)->not->toBeNull();
+});
+
+it('records failures for all URLs when HTTP request throws exception', function () {
+    $user = User::factory()->create();
+    $rssUrl1 = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/feed1.xml'
+    ]);
+    $rssUrl2 = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/feed2.xml'
+    ]);
+    
+    Http::fake([
+        'localhost:8080/rss' => Http::throw(fn() => new \Exception('Connection timeout'))
+    ]);
+    
+    (new RssFetcherService())->fetchForUser($user);
+    
+    $rssUrl1->refresh();
+    $rssUrl2->refresh();
+    
+    expect($rssUrl1->consecutive_failures)->toBe(1);
+    expect($rssUrl1->last_failure_at)->not->toBeNull();
+    expect($rssUrl2->consecutive_failures)->toBe(1);
+    expect($rssUrl2->last_failure_at)->not->toBeNull();
+});
+
+it('records success for URLs that return items', function () {
+    $user = User::factory()->create();
+    $rssUrl1 = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/feed1.xml',
+        'consecutive_failures' => 2, // Less than 3, so not in cooldown
+        'last_failure_at' => now(),
+    ]);
+    $rssUrl2 = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/feed2.xml',
+        'consecutive_failures' => 1, // Less than 3, so not in cooldown
+        'last_failure_at' => now(),
+    ]);
+
+    dump('DB URLs:', $rssUrl1->url, $rssUrl2->url);
+
+    $responseItems = [
+        [
+            'title' => 'Article from Feed 1',
+            'source' => 'Feed 1',
+            'source_url' => 'https://example.com',
+            'link' => 'https://example.com/article1',
+            'publish_date' => now()->toIso8601String(),
+            'description' => 'From feed 1',
+            'rss_url' => 'https://example.com/feed1.xml'
+        ],
+        [
+            'title' => 'Article from Feed 2',
+            'source' => 'Feed 2',
+            'source_url' => 'https://example.com',
+            'link' => 'https://example.com/article2',
+            'publish_date' => now()->toIso8601String(),
+            'description' => 'From feed 2',
+            'rss_url' => 'https://example.com/feed2.xml'
+        ]
+    ];
+
+    dump('Response rss_url values:', $responseItems[0]['rss_url'], $responseItems[1]['rss_url']);
+
+    Http::fake([
+        'localhost:8080/rss' => Http::response([
+            'items' => $responseItems
+        ], 200)
+    ]);
+    
+    (new RssFetcherService())->fetchForUser($user);
+    
+    $rssUrl1->refresh();
+    $rssUrl2->refresh();
+    dump('After fetch:', [
+        'rssUrl1' => [
+            'consecutive_failures' => $rssUrl1->consecutive_failures,
+            'last_failure_at' => $rssUrl1->last_failure_at,
+        ],
+        'rssUrl2' => [
+            'consecutive_failures' => $rssUrl2->consecutive_failures,
+            'last_failure_at' => $rssUrl2->last_failure_at,
+        ],
+    ]);
+    
+    expect($rssUrl1->consecutive_failures)->toBe(0);
+    expect($rssUrl1->last_failure_at)->toBeNull();
+    expect($rssUrl2->consecutive_failures)->toBe(0);
+    expect($rssUrl2->last_failure_at)->toBeNull();
+});
+
+it('skips disabled URLs during fetching', function () {
+    $user = User::factory()->create();
+    $activeUrl = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/active.xml',
+        'consecutive_failures' => 0,
+        'last_failure_at' => null,
+        'disabled_at' => null,
+    ]);
+    $disabledUrl = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/disabled.xml',
+        'consecutive_failures' => 10,
+        'last_failure_at' => now(),
+        'disabled_at' => now(),
+    ]);
+    
+    Http::fake([
+        'localhost:8080/rss' => Http::response([
+            'items' => [
+                [
+                    'title' => 'Active Article',
+                    'source' => 'Active Feed',
+                    'source_url' => 'https://example.com',
+                    'link' => 'https://example.com/active-article',
+                    'publish_date' => now()->toIso8601String(),
+                    'description' => 'From active feed',
+                    'rss_url' => 'https://example.com/active.xml'
+                ]
+            ]
+        ], 200)
+    ]);
+    
+    (new RssFetcherService())->fetchForUser($user);
+    
+    // Only the active URL should be fetched
+    assertDatabaseHas('rss_items', [
+        'user_id' => $user->id,
+        'rss_url_id' => $activeUrl->id,
+        'title' => 'Active Article'
+    ]);
+    
+    // Disabled URL should not be fetched
+    assertDatabaseMissing('rss_items', [
+        'user_id' => $user->id,
+        'rss_url_id' => $disabledUrl->id
+    ]);
+});
+
+it('skips URLs in cooldown period', function () {
+    $user = User::factory()->create();
+    $activeUrl = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/active.xml',
+        'consecutive_failures' => 0,
+        'last_failure_at' => null,
+        'disabled_at' => null,
+    ]);
+    $cooldownUrl = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/cooldown.xml',
+        'consecutive_failures' => 3,
+        'last_failure_at' => now()->subHours(12), // Less than 1 day ago
+        'disabled_at' => null,
+    ]);
+    
+    Http::fake([
+        'localhost:8080/rss' => Http::response([
+            'items' => [
+                [
+                    'title' => 'Active Article',
+                    'source' => 'Active Feed',
+                    'source_url' => 'https://example.com',
+                    'link' => 'https://example.com/active-article',
+                    'publish_date' => now()->toIso8601String(),
+                    'description' => 'From active feed',
+                    'rss_url' => 'https://example.com/active.xml'
+                ]
+            ]
+        ], 200)
+    ]);
+    
+    (new RssFetcherService())->fetchForUser($user);
+    
+    // Only the active URL should be fetched
+    assertDatabaseHas('rss_items', [
+        'user_id' => $user->id,
+        'rss_url_id' => $activeUrl->id,
+        'title' => 'Active Article'
+    ]);
+    
+    // Cooldown URL should not be fetched
+    assertDatabaseMissing('rss_items', [
+        'user_id' => $user->id,
+        'rss_url_id' => $cooldownUrl->id
+    ]);
+});
+
+it('permanently disables URL after 10 consecutive failures', function () {
+    $user = User::factory()->create();
+    $rssUrl = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/feed.xml',
+        'consecutive_failures' => 9,
+        'last_failure_at' => now()->subDays(2), // Not in cooldown
+        'disabled_at' => null,
+    ]);
+    
+    Http::fake([
+        'localhost:8080/rss' => Http::response([], 500) // Server error
+    ]);
+    
+    (new RssFetcherService())->fetchForUser($user);
+    
+    $rssUrl->refresh();
+    
+    expect($rssUrl->consecutive_failures)->toBe(10);
+    expect($rssUrl->is_disabled)->toBeTrue();
+    expect($rssUrl->disabled_at)->not->toBeNull();
+});
+
+it('does not fetch when all URLs are disabled or in cooldown', function () {
+    $user = User::factory()->create();
+    $disabledUrl = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/disabled.xml',
+        'consecutive_failures' => 10,
+        'last_failure_at' => now(),
+        'disabled_at' => now(),
+    ]);
+    $cooldownUrl = RssUrl::factory()->create([
+        'user_id' => $user->id,
+        'url' => 'https://example.com/cooldown.xml',
+        'consecutive_failures' => 3,
+        'last_failure_at' => now()->subHours(12), // Less than 1 day ago
+        'disabled_at' => null,
+    ]);
+    
+    Http::fake([
+        'localhost:8080/rss' => Http::response([], 200)
+    ]);
+    
+    (new RssFetcherService())->fetchForUser($user);
+    
+    // No HTTP request should be made since all URLs are inactive
+    Http::assertNotSent(function ($request) {
+        return $request->url() === 'localhost:8080/rss';
+    });
 }); 

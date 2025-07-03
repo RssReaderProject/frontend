@@ -100,4 +100,25 @@ class RssUrlController extends Controller
         return redirect()->route('rss.urls.index')
             ->with('success', 'RSS URL deleted successfully.');
     }
+
+    /**
+     * Re-enable a disabled RSS URL.
+     */
+    public function reEnable(string $id)
+    {
+        $rssUrl = RssUrl::findByUser(Auth::user(), $id);
+        if (! $rssUrl) {
+            abort(404);
+        }
+
+        if (!$rssUrl->is_disabled) {
+            return redirect()->route('rss.urls.index')
+                ->with('info', 'RSS URL is already active.');
+        }
+
+        $rssUrl->reEnable();
+
+        return redirect()->route('rss.urls.index')
+            ->with('success', 'RSS URL has been re-enabled successfully.');
+    }
 }

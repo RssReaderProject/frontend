@@ -162,3 +162,126 @@ test('rss url timestamps are automatically set', function () {
     expect($rssUrl->created_at)->toBeInstanceOf(\Carbon\Carbon::class);
     expect($rssUrl->updated_at)->toBeInstanceOf(\Carbon\Carbon::class);
 });
+
+test('recordFailure increments consecutive_failures and sets last_failure_at, disables at 10', function () {
+    $rssUrl = RssUrl::factory()->forUser($this->user)->create([
+        'consecutive_failures' => 0,
+        'last_failure_at' => null,
+        'disabled_at' => null,
+    ]);
+
+    $rssUrl->recordFailure();
+    $rssUrl->refresh();
+    expect($rssUrl->consecutive_failures)->toBe(1);
+    expect($rssUrl->last_failure_at)->not->toBeNull();
+    expect($rssUrl->is_disabled)->toBeFalse();
+
+    // Fail 9 more times
+    for ($i = 0; $i < 9; $i++) {
+        $rssUrl->recordFailure();
+    }
+    $rssUrl->refresh();
+    expect($rssUrl->consecutive_failures)->toBe(10);
+    expect($rssUrl->is_disabled)->toBeTrue();
+    expect($rssUrl->disabled_at)->not->toBeNull();
+});
+
+test('recordSuccess resets consecutive_failures and last_failure_at', function () {
+    $rssUrl = RssUrl::factory()->forUser($this->user)->create([
+        'consecutive_failures' => 5,
+        'last_failure_at' => now(),
+    ]);
+    $rssUrl->recordSuccess();
+    $rssUrl->refresh();
+    expect($rssUrl->consecutive_failures)->toBe(0);
+    expect($rssUrl->last_failure_at)->toBeNull();
+});
+
+test('reEnable resets disabled_at and failure state', function () {
+    $rssUrl = RssUrl::factory()->forUser($this->user)->create([
+        'consecutive_failures' => 10,
+        'last_failure_at' => now(),
+        'disabled_at' => now(),
+    ]);
+    $rssUrl->reEnable();
+    $rssUrl->refresh();
+    expect($rssUrl->is_disabled)->toBeFalse();
+    expect($rssUrl->consecutive_failures)->toBe(0);
+    expect($rssUrl->last_failure_at)->toBeNull();
+    expect($rssUrl->disabled_at)->toBeNull();
+});
+
+test('is_disabled virtual property works', function () {
+    $rssUrl = RssUrl::factory()->forUser($this->user)->create(['disabled_at' => null]);
+    expect($rssUrl->is_disabled)->toBeFalse();
+    $rssUrl->update(['disabled_at' => now()]);
+    $rssUrl->refresh();
+    expect($rssUrl->is_disabled)->toBeTrue();
+});
+
+test('shouldSkipFetch returns correct value based on active scope logic', function () {
+    // Not disabled, <3 failures
+    $rssUrl = RssUrl::factory()->forUser($this->user)->create([
+        'consecutive_failures' => 2,
+        'last_failure_at' => now(),
+        'disabled_at' => null,
+    ]);
+    expect($rssUrl->shouldSkipFetch())->toBeFalse();
+
+    // Not disabled, last_failure_at null
+    $rssUrl->update(['consecutive_failures' => 5, 'last_failure_at' => null]);
+    $rssUrl->refresh();
+    expect($rssUrl->shouldSkipFetch())->toBeFalse();
+
+    // Not disabled, 3+ failures, last_failure_at < 1 day ago
+    $rssUrl->update(['consecutive_failures' => 3, 'last_failure_at' => now()->subHours(12)]);
+    $rssUrl->refresh();
+    expect($rssUrl->shouldSkipFetch())->toBeTrue();
+
+    // Not disabled, 3+ failures, last_failure_at > 1 day ago, <10 failures
+    $rssUrl->update(['consecutive_failures' => 5, 'last_failure_at' => now()->subDays(2)]);
+    $rssUrl->refresh();
+    expect($rssUrl->shouldSkipFetch())->toBeFalse();
+
+    // Not disabled, 10 failures, last_failure_at > 1 day ago
+    $rssUrl->update(['consecutive_failures' => 10, 'last_failure_at' => now()->subDays(2)]);
+    $rssUrl->refresh();
+    expect($rssUrl->shouldSkipFetch())->toBeTrue();
+
+    // Disabled
+    $rssUrl->update(['disabled_at' => now()]);
+    $rssUrl->refresh();
+    expect($rssUrl->shouldSkipFetch())->toBeTrue();
+});
+
+test('active scope returns only active URLs', function () {
+    $active = RssUrl::factory()->forUser($this->user)->create([
+        'consecutive_failures' => 0,
+        'last_failure_at' => null,
+        'disabled_at' => null,
+    ]);
+    $cooldown = RssUrl::factory()->forUser($this->user)->create([
+        'consecutive_failures' => 3,
+        'last_failure_at' => now()->subHours(12),
+        'disabled_at' => null,
+    ]);
+    $disabled = RssUrl::factory()->forUser($this->user)->create([
+        'consecutive_failures' => 10,
+        'last_failure_at' => now(),
+        'disabled_at' => now(),
+    ]);
+    $out_of_cooldown = RssUrl::factory()->forUser($this->user)->create([
+        'consecutive_failures' => 3,
+        'last_failure_at' => now()->subDays(2),
+        'disabled_at' => null,
+    ]);
+    
+    $activeUrls = RssUrl::activeForUser($this->user);
+    
+    $activeUrlIds = $activeUrls->pluck('id')->toArray();
+    
+    expect($activeUrlIds)->toContain($active->id);
+    expect($activeUrlIds)->toContain($out_of_cooldown->id);
+    expect($activeUrlIds)->not->toContain($cooldown->id);
+    expect($activeUrlIds)->not->toContain($disabled->id);
+});
