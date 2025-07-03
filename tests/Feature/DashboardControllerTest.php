@@ -113,11 +113,17 @@ it('only shows user\'s own data', function () {
 
     // User 1's data
     RssUrl::factory()->create(['user_id' => $user1->id]);
-    RssItem::factory()->create(['user_id' => $user1->id]);
+    RssItem::factory()->create([
+        'user_id' => $user1->id,
+        'publish_date' => now()->subDay(),
+    ]);
 
     // User 2's data
     RssUrl::factory()->create(['user_id' => $user2->id]);
-    RssItem::factory()->create(['user_id' => $user2->id]);
+    RssItem::factory()->create([
+        'user_id' => $user2->id,
+        'publish_date' => now()->subDay(),
+    ]);
 
     $response = $this->actingAs($user1)->get(route('dashboard'));
 
