@@ -27,29 +27,52 @@ RUN apt-get update \
 RUN a2enmod rewrite
 
 # Set working directory
-WORKDIR /var/www/html
+WORKDIR /var/www
 
-# Copy built assets and vendor
+# Set production environment variables
+ENV APP_ENV=production
+ENV APP_DEBUG=false
+
+# Copy the entire Laravel application
+COPY . .
+
+# Copy built assets and vendor from previous stages
 COPY --from=node-build /app/resources/ ./resources/
 COPY --from=node-build /app/node_modules/ ./node_modules/
 COPY --from=node-build /app/vite.config.ts ./
 COPY --from=composer-build /app/vendor/ ./vendor/
 
-# Copy rest of the application
-COPY . .
-
-# Copy Laravel public files to Apache web root
-COPY public/ /var/www/html/
+# Clear Laravel cache to ensure dont-discover configuration takes effect
+RUN rm -rf bootstrap/cache/*.php
 
 # Ensure database directory exists for SQLite
 RUN mkdir -p database && touch database/database.sqlite
 
-# Set correct permissions for Laravel
-RUN chown -R www-data:www-data storage bootstrap/cache database \
-    && chmod -R 775 storage bootstrap/cache database
+# Set correct permissions for Laravel directories
+RUN chown -R www-data:www-data storage bootstrap/cache database vendor \
+    && chmod -R 775 storage bootstrap/cache database vendor
 
-# Configure Apache to allow .htaccess overrides
-RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+# Create basic .env file for production
+RUN echo "APP_NAME=Laravel" > .env \
+    && echo "APP_ENV=production" >> .env \
+    && echo "APP_KEY=base64:$(openssl rand -base64 32)" >> .env \
+    && echo "APP_DEBUG=false" >> .env \
+    && echo "APP_URL=http://localhost" >> .env \
+    && echo "LOG_CHANNEL=stack" >> .env \
+    && echo "LOG_DEPRECATIONS_CHANNEL=null" >> .env \
+    && echo "LOG_LEVEL=debug" >> .env \
+    && echo "DB_CONNECTION=sqlite" >> .env \
+    && echo "DB_DATABASE=/var/www/database/database.sqlite" >> .env \
+    && echo "BROADCAST_DRIVER=log" >> .env \
+    && echo "CACHE_DRIVER=file" >> .env \
+    && echo "FILESYSTEM_DISK=local" >> .env \
+    && echo "QUEUE_CONNECTION=sync" >> .env \
+    && echo "SESSION_DRIVER=file" >> .env \
+    && echo "SESSION_LIFETIME=120" >> .env
+
+# Configure Apache to use Laravel's public directory as document root
+RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/public|g' /etc/apache2/sites-available/000-default.conf \
+    && sed -i 's|AllowOverride None|AllowOverride All|g' /etc/apache2/apache2.conf
 
 # Expose Apache port
 EXPOSE 80
