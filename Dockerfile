@@ -5,8 +5,7 @@ FROM node:22-alpine AS node-build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY resources/ ./resources/
-COPY vite.config.ts ./
+COPY . .
 RUN npm run build
 
 # --- Composer Stage ---
@@ -37,7 +36,7 @@ ENV APP_DEBUG=false
 COPY . .
 
 # Copy built assets and vendor from previous stages
-COPY --from=node-build /app/resources/ ./resources/
+COPY --from=node-build /app/public/build/ ./public/build/
 COPY --from=node-build /app/node_modules/ ./node_modules/
 COPY --from=node-build /app/vite.config.ts ./
 COPY --from=composer-build /app/vendor/ ./vendor/
