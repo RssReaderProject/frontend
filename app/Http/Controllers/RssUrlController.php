@@ -32,7 +32,7 @@ class RssUrlController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'url' => 'required|url|unique:rss_urls,url,NULL,id,user_id,' . Auth::id(),
+            'url' => 'required|url|unique:rss_urls,url,NULL,id,user_id,'.Auth::id(),
         ]);
 
         Auth::user()->rssUrls()->create($request->only('url'));
@@ -47,7 +47,7 @@ class RssUrlController extends Controller
     public function show(string $id)
     {
         $rssUrl = RssUrl::findByUser(Auth::user(), $id);
-        if (!$rssUrl) {
+        if (! $rssUrl) {
             abort(404);
         }
 
@@ -60,7 +60,7 @@ class RssUrlController extends Controller
     public function edit(string $id)
     {
         $rssUrl = RssUrl::findByUser(Auth::user(), $id);
-        if (!$rssUrl) {
+        if (! $rssUrl) {
             abort(404);
         }
 
@@ -73,11 +73,11 @@ class RssUrlController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'url' => 'required|url|unique:rss_urls,url,'.$id.',id,user_id,' . Auth::id(),
+            'url' => 'required|url|unique:rss_urls,url,'.$id.',id,user_id,'.Auth::id(),
         ]);
 
         $rssUrl = RssUrl::findByUser(Auth::user(), $id);
-        if (!$rssUrl) {
+        if (! $rssUrl) {
             abort(404);
         }
         $rssUrl->update($request->only('url'));
@@ -92,7 +92,7 @@ class RssUrlController extends Controller
     public function destroy(string $id)
     {
         $rssUrl = RssUrl::findByUser(Auth::user(), $id);
-        if (!$rssUrl) {
+        if (! $rssUrl) {
             abort(404);
         }
         $rssUrl->delete();

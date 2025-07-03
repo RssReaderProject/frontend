@@ -28,7 +28,7 @@ test('user has many rss urls', function () {
 test('forUser returns all rss urls for a specific user', function () {
     // Create RSS URLs for the user
     $userRssUrls = RssUrl::factory()->count(3)->forUser($this->user)->create();
-    
+
     // Create RSS URLs for another user
     $otherUserRssUrls = RssUrl::factory()->count(2)->forUser($this->otherUser)->create();
 
@@ -148,7 +148,7 @@ test('rss url deletion cascades properly', function () {
 });
 
 test('rss url has correct fillable attributes', function () {
-    $rssUrl = new RssUrl();
+    $rssUrl = new RssUrl;
 
     expect($rssUrl->getFillable())->toContain('url');
     expect($rssUrl->getFillable())->toContain('user_id');

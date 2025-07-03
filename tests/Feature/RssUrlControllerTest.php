@@ -13,7 +13,7 @@ beforeEach(function () {
 test('index displays only user rss urls', function () {
     // Create RSS URLs for the authenticated user
     $userRssUrls = RssUrl::factory()->count(3)->forUser($this->user)->create();
-    
+
     // Create RSS URLs for another user
     $otherUser = User::factory()->create();
     $otherUserRssUrls = RssUrl::factory()->count(2)->forUser($otherUser)->create();
@@ -28,7 +28,7 @@ test('index displays only user rss urls', function () {
     foreach ($userRssUrls as $rssUrl) {
         $response->assertSee($rssUrl->url);
     }
-    
+
     // Should not see other user's RSS URLs
     foreach ($otherUserRssUrls as $rssUrl) {
         $response->assertDontSee($rssUrl->url);
@@ -177,12 +177,12 @@ test('update modifies existing rss url with valid data for authenticated user', 
     $response->assertSessionHas('success', 'RSS URL updated successfully.');
 
     $this->assertDatabaseHas('rss_urls', [
-        'id' => $rssUrl->id, 
+        'id' => $rssUrl->id,
         'url' => $newUrl,
         'user_id' => $this->user->id,
     ]);
     $this->assertDatabaseMissing('rss_urls', [
-        'id' => $rssUrl->id, 
+        'id' => $rssUrl->id,
         'url' => 'https://old-example.com/feed.xml',
     ]);
 });
