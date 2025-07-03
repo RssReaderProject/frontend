@@ -67,7 +67,9 @@ RUN echo "APP_NAME=Laravel" > .env \
     && echo "FILESYSTEM_DISK=local" >> .env \
     && echo "QUEUE_CONNECTION=sync" >> .env \
     && echo "SESSION_DRIVER=file" >> .env \
-    && echo "SESSION_LIFETIME=120" >> .env
+    && echo "SESSION_LIFETIME=120" >> .env \
+    && echo "RSS_SERVICE_URL=http://localhost:8080" >> .env \
+    && echo "RSS_ITEM_RETENTION_DAYS=30" >> .env
 
 # Configure Apache to use Laravel's public directory as document root
 RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/public|g' /etc/apache2/sites-available/000-default.conf \
