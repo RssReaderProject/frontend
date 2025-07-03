@@ -21,11 +21,17 @@ class RssUrlFactory extends Factory
             'blog.example.com',
             'news.example.com',
             'tech.example.com',
-            'feed.example.com'
+            'feed.example.com',
         ];
 
         $domain = $this->faker->randomElement($domains);
-        $feedTypes = ['feed.xml', 'rss.xml', 'atom.xml', 'feed.rss', 'rss/feed.xml'];
+        $feedTypes = [
+            'feed.xml',
+            'rss.xml',
+            'atom.xml',
+            'feed.rss',
+            'rss/feed.xml',
+        ];
 
         return [
             'url' => 'https://' . $domain . '/' . $this->faker->randomElement($feedTypes),

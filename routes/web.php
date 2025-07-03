@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\RssUrlController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\RssUrlController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');

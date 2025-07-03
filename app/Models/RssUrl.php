@@ -8,6 +8,6 @@ use Illuminate\Database\Eloquent\Model;
 class RssUrl extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = ['url'];
 }

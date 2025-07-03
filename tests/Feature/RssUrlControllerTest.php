@@ -42,7 +42,7 @@ test('create displays the create form', function () {
 
 test('store creates a new rss url with valid data', function () {
     $rssUrlData = [
-        'url' => 'https://example.com/feed.xml'
+        'url' => 'https://example.com/feed.xml',
     ];
 
     $response = $this->actingAs($this->user)->post('/rss-urls', $rssUrlData);
@@ -126,8 +126,12 @@ test('update modifies existing rss url with valid data', function () {
     $response->assertRedirect('/rss-urls');
     $response->assertSessionHas('success', 'RSS URL updated successfully.');
     
-    $this->assertDatabaseHas('rss_urls', ['id' => $rssUrl->id, 'url' => $newUrl]);
-    $this->assertDatabaseMissing('rss_urls', ['id' => $rssUrl->id, 'url' => 'https://old-example.com/feed.xml']);
+    $this->assertDatabaseHas('rss_urls', [
+        'id' => $rssUrl->id, 'url' => $newUrl,
+    ]);
+    $this->assertDatabaseMissing('rss_urls', [
+        'id' => $rssUrl->id, 'url' => 'https://old-example.com/feed.xml',
+    ]);
 });
 
 test('update validates required url field', function () {
@@ -155,7 +159,7 @@ test('update validates unique url excluding current record', function () {
     $rssUrl2 = RssUrl::factory()->create(['url' => 'https://example2.com/feed.xml']);
 
     $response = $this->actingAs($this->user)->put("/rss-urls/{$rssUrl1->id}", [
-        'url' => 'https://example2.com/feed.xml'
+        'url' => 'https://example2.com/feed.xml',
     ]);
 
     $response->assertSessionHasErrors(['url']);
@@ -175,7 +179,7 @@ test('update allows same url for same record', function () {
 
 test('update returns 404 for non-existent rss url', function () {
     $response = $this->actingAs($this->user)->put('/rss-urls/999', [
-        'url' => 'https://example.com/feed.xml'
+        'url' => 'https://example.com/feed.xml',
     ]);
 
     $response->assertStatus(404);
