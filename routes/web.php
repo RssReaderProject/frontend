@@ -9,10 +9,6 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
-
     Route::resource('rss/urls', RssUrlController::class)->names([
         'index' => 'rss.urls.index',
         'create' => 'rss.urls.create',
