@@ -656,8 +656,6 @@ it('records success for URLs that return items', function () {
         'last_failure_at' => now(),
     ]);
 
-    dump('DB URLs:', $rssUrl1->url, $rssUrl2->url);
-
     $responseItems = [
         [
             'title' => 'Article from Feed 1',
@@ -679,8 +677,6 @@ it('records success for URLs that return items', function () {
         ]
     ];
 
-    dump('Response rss_url values:', $responseItems[0]['rss_url'], $responseItems[1]['rss_url']);
-
     Http::fake([
         'localhost:8080/rss' => Http::response([
             'items' => $responseItems
@@ -691,16 +687,6 @@ it('records success for URLs that return items', function () {
     
     $rssUrl1->refresh();
     $rssUrl2->refresh();
-    dump('After fetch:', [
-        'rssUrl1' => [
-            'consecutive_failures' => $rssUrl1->consecutive_failures,
-            'last_failure_at' => $rssUrl1->last_failure_at,
-        ],
-        'rssUrl2' => [
-            'consecutive_failures' => $rssUrl2->consecutive_failures,
-            'last_failure_at' => $rssUrl2->last_failure_at,
-        ],
-    ]);
     
     expect($rssUrl1->consecutive_failures)->toBe(0);
     expect($rssUrl1->last_failure_at)->toBeNull();
