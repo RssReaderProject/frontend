@@ -6,7 +6,7 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="d-flex align-items-center mb-4">
-                <a href="{{ route('rss-urls.index') }}" class="btn btn-outline-secondary me-3">
+                <a href="{{ route('rss.urls.index') }}" class="btn btn-outline-secondary me-3">
                     <i class="bi bi-arrow-left"></i> Back to RSS URLs
                 </a>
                 <h1 class="h2 mb-0">Add RSS URL</h1>
@@ -14,7 +14,7 @@
 
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <form action="{{ route('rss-urls.store') }}" method="POST">
+                    <form action="{{ route('rss.urls.store') }}" method="POST">
                         @csrf
                         
                         <div class="mb-3">
@@ -34,7 +34,7 @@
                         </div>
 
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="{{ route('rss-urls.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('rss.urls.index') }}" class="btn btn-secondary">
                                 Cancel
                             </a>
                             <button type="submit" class="btn btn-primary">

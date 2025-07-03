@@ -14,7 +14,7 @@ class RssUrlController extends Controller
     {
         $rssUrls = RssUrl::all();
 
-        return view('rss-urls.index', compact('rssUrls'));
+        return view('rss.urls.index', compact('rssUrls'));
     }
 
     /**
@@ -22,7 +22,7 @@ class RssUrlController extends Controller
      */
     public function create()
     {
-        return view('rss-urls.create');
+        return view('rss.urls.create');
     }
 
     /**
@@ -36,7 +36,7 @@ class RssUrlController extends Controller
 
         RssUrl::create($request->only('url'));
 
-        return redirect()->route('rss-urls.index')
+        return redirect()->route('rss.urls.index')
             ->with('success', 'RSS URL created successfully.');
     }
 
@@ -47,7 +47,7 @@ class RssUrlController extends Controller
     {
         $rssUrl = RssUrl::findOrFail($id);
 
-        return view('rss-urls.show', compact('rssUrl'));
+        return view('rss.urls.show', compact('rssUrl'));
     }
 
     /**
@@ -57,7 +57,7 @@ class RssUrlController extends Controller
     {
         $rssUrl = RssUrl::findOrFail($id);
 
-        return view('rss-urls.edit', compact('rssUrl'));
+        return view('rss.urls.edit', compact('rssUrl'));
     }
 
     /**
@@ -72,7 +72,7 @@ class RssUrlController extends Controller
         $rssUrl = RssUrl::findOrFail($id);
         $rssUrl->update($request->only('url'));
 
-        return redirect()->route('rss-urls.index')
+        return redirect()->route('rss.urls.index')
             ->with('success', 'RSS URL updated successfully.');
     }
 
@@ -84,7 +84,7 @@ class RssUrlController extends Controller
         $rssUrl = RssUrl::findOrFail($id);
         $rssUrl->delete();
 
-        return redirect()->route('rss-urls.index')
+        return redirect()->route('rss.urls.index')
             ->with('success', 'RSS URL deleted successfully.');
     }
 }
