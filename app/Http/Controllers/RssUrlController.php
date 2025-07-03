@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\RssUrl;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class RssUrlController extends Controller
 {
@@ -12,7 +13,7 @@ class RssUrlController extends Controller
      */
     public function index()
     {
-        $rssUrls = RssUrl::all();
+        $rssUrls = RssUrl::forUser(Auth::user());
 
         return view('rss.urls.index', compact('rssUrls'));
     }
@@ -31,10 +32,10 @@ class RssUrlController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'url' => 'required|url|unique:rss_urls,url',
+            'url' => 'required|url|unique:rss_urls,url,NULL,id,user_id,'.Auth::id(),
         ]);
 
-        RssUrl::create($request->only('url'));
+        Auth::user()->rssUrls()->create($request->only('url'));
 
         return redirect()->route('rss.urls.index')
             ->with('success', 'RSS URL created successfully.');
@@ -45,7 +46,10 @@ class RssUrlController extends Controller
      */
     public function show(string $id)
     {
-        $rssUrl = RssUrl::findOrFail($id);
+        $rssUrl = RssUrl::findByUser(Auth::user(), $id);
+        if (! $rssUrl) {
+            abort(404);
+        }
 
         return view('rss.urls.show', compact('rssUrl'));
     }
@@ -55,7 +59,10 @@ class RssUrlController extends Controller
      */
     public function edit(string $id)
     {
-        $rssUrl = RssUrl::findOrFail($id);
+        $rssUrl = RssUrl::findByUser(Auth::user(), $id);
+        if (! $rssUrl) {
+            abort(404);
+        }
 
         return view('rss.urls.edit', compact('rssUrl'));
     }
@@ -66,10 +73,13 @@ class RssUrlController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'url' => 'required|url|unique:rss_urls,url,'.$id,
+            'url' => 'required|url|unique:rss_urls,url,'.$id.',id,user_id,'.Auth::id(),
         ]);
 
-        $rssUrl = RssUrl::findOrFail($id);
+        $rssUrl = RssUrl::findByUser(Auth::user(), $id);
+        if (! $rssUrl) {
+            abort(404);
+        }
         $rssUrl->update($request->only('url'));
 
         return redirect()->route('rss.urls.index')
@@ -81,7 +91,10 @@ class RssUrlController extends Controller
      */
     public function destroy(string $id)
     {
-        $rssUrl = RssUrl::findOrFail($id);
+        $rssUrl = RssUrl::findByUser(Auth::user(), $id);
+        if (! $rssUrl) {
+            abort(404);
+        }
         $rssUrl->delete();
 
         return redirect()->route('rss.urls.index')

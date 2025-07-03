@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -35,6 +36,17 @@ class RssUrlFactory extends Factory
 
         return [
             'url' => 'https://'.$domain.'/'.$this->faker->randomElement($feedTypes),
+            'user_id' => User::factory(),
         ];
+    }
+
+    /**
+     * Create an RSS URL for a specific user.
+     */
+    public function forUser(User $user): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'user_id' => $user->id,
+        ]);
     }
 }
