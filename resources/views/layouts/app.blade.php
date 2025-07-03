@@ -40,6 +40,7 @@
                 </ul>
                 
                 <ul class="navbar-nav">
+                    @if(Auth::check())
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle me-1"></i>
@@ -67,6 +68,7 @@
                             </li>
                         </ul>
                     </li>
+                    @endif
                 </ul>
             </div>
         </div>

@@ -1,4 +1,4 @@
-@props(['title', 'subtitle' => null])
+@props(['title' => null, 'subtitle' => null])
 
 <div class="card shadow-sm border-0">
     @if($title || $subtitle)
