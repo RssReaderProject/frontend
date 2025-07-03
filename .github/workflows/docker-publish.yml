@@ -15,7 +15,6 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    concurrency: docker-build-${{ github.ref }}
     permissions:
       contents: read
       packages: write
@@ -46,11 +45,11 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
 
-      - name: Build and push Docker image
+      - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -59,22 +58,15 @@ jobs:
         run: |
           # Get the latest built tag
           LATEST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
-          
           # Start the container
           CONTAINER_ID=$(docker run -d -p 8080:80 $LATEST_TAG)
-          
-          # Wait for container to be ready
           echo "Waiting for container to start..."
           sleep 10
-          
-          # Check if container is running
           if ! docker ps | grep -q $CONTAINER_ID; then
             echo "Container failed to start"
             docker logs $CONTAINER_ID
             exit 1
           fi
-          
-          # Test the root endpoint
           echo "Testing root endpoint..."
           for i in {1..30}; do
             if curl -f -s http://localhost:8080/ > /dev/null; then
@@ -84,15 +76,21 @@ jobs:
             echo "Attempt $i: Waiting for application to be ready..."
             sleep 2
           done
-          
-          # Final test with more detailed output
           if ! curl -f -s http://localhost:8080/ > /dev/null; then
             echo "❌ Container test failed - root endpoint not accessible"
             docker logs $CONTAINER_ID
             exit 1
           fi
-          
-          # Clean up
           docker stop $CONTAINER_ID
           docker rm $CONTAINER_ID
-          echo "✅ Container test completed successfully" 
+          echo "✅ Container test completed successfully"
+
+      - name: Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max 
