@@ -3,80 +3,85 @@
 @section('title', 'RSS URLs')
 
 @section('content')
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2 mb-0">RSS URLs</h1>
+    <x-page-header title="RSS URLs" subtitle="Manage your RSS feed subscriptions">
         <a href="{{ route('rss.urls.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus"></i> Add New RSS URL
+            <i class="bi bi-plus-circle me-1"></i> Add New RSS URL
         </a>
-    </div>
+    </x-page-header>
 
     @if($rssUrls->count() > 0)
-        <div class="card shadow-sm">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-semibold">
+                        <i class="bi bi-list-ul me-2"></i>Your RSS Feeds ({{ $rssUrls->count() }})
+                    </h6>
+                    <small class="text-muted">Click on a URL to open it in a new tab</small>
+                </div>
+            </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th scope="col">ID</th>
-                                <th scope="col">URL</th>
-                                <th scope="col">Status</th>
-                                <th scope="col">Failures</th>
-                                <th scope="col">Created</th>
-                                <th scope="col" class="text-end">Actions</th>
+                                <th scope="col" class="border-0">ID</th>
+                                <th scope="col" class="border-0">URL</th>
+                                <th scope="col" class="border-0">Status</th>
+                                <th scope="col" class="border-0">Failures</th>
+                                <th scope="col" class="border-0">Created</th>
+                                <th scope="col" class="border-0 text-end">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($rssUrls as $rssUrl)
                                 <tr>
-                                    <td>{{ $rssUrl->id }}</td>
-                                    <td>
-                                        <a href="{{ $rssUrl->url }}" target="_blank" class="text-decoration-none">
-                                            {{ $rssUrl->url }}
+                                    <td class="align-middle">
+                                        <span class="badge bg-secondary">{{ $rssUrl->id }}</span>
+                                    </td>
+                                    <td class="align-middle">
+                                        <a href="{{ $rssUrl->url }}" target="_blank" class="text-decoration-none text-primary fw-medium">
+                                            {{ Str::limit($rssUrl->url, 50) }}
+                                            <i class="bi bi-box-arrow-up-right ms-1" style="font-size: 0.8em;"></i>
                                         </a>
                                     </td>
-                                    <td>
+                                    <td class="align-middle">
                                         @if($rssUrl->is_disabled)
-                                            <span class="badge bg-danger">Disabled</span>
+                                            <x-status-badge status="disabled" />
                                         @elseif($rssUrl->consecutive_failures >= 3)
-                                            <span class="badge bg-warning">Cooldown</span>
+                                            <x-status-badge status="cooldown" />
                                         @elseif($rssUrl->consecutive_failures > 0)
-                                            <span class="badge bg-warning">{{ $rssUrl->consecutive_failures }} failures</span>
+                                            <x-status-badge status="failures" :failures="$rssUrl->consecutive_failures" :lastFailure="$rssUrl->last_failure_at" />
                                         @else
-                                            <span class="badge bg-success">Active</span>
+                                            <x-status-badge status="active" />
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="align-middle">
                                         @if($rssUrl->consecutive_failures > 0)
-                                            <span class="text-muted">{{ $rssUrl->consecutive_failures }}/10</span>
-                                            @if($rssUrl->last_failure_at)
-                                                <br><small class="text-muted">{{ $rssUrl->last_failure_at->diffForHumans() }}</small>
-                                            @endif
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                                    <div class="progress-bar bg-warning" style="width: {{ ($rssUrl->consecutive_failures / 10) * 100 }}%"></div>
+                                                </div>
+                                                <small class="text-muted">{{ $rssUrl->consecutive_failures }}/10</small>
+                                            </div>
                                         @else
                                             <span class="text-muted">-</span>
                                         @endif
                                     </td>
-                                    <td>{{ $rssUrl->created_at->format('M d, Y H:i') }}</td>
-                                    <td class="text-end">
-                                        <div class="btn-group" role="group">
-                                            <a href="{{ route('rss.urls.show', $rssUrl) }}" class="btn btn-sm btn-outline-primary">View</a>
-                                            <a href="{{ route('rss.urls.edit', $rssUrl) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                                            @if($rssUrl->is_disabled)
-                                                <form action="{{ route('rss.urls.re-enable', $rssUrl) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit" class="btn btn-sm btn-outline-success">
-                                                        Re-enable
-                                                    </button>
-                                                </form>
-                                            @endif
-                                            <form action="{{ route('rss.urls.destroy', $rssUrl) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this RSS URL?')">
-                                                    Delete
-                                                </button>
-                                            </form>
-                                        </div>
+                                    <td class="align-middle">
+                                        <small class="text-muted">
+                                            {{ $rssUrl->created_at->format('M d, Y') }}
+                                            <br>
+                                            {{ $rssUrl->created_at->format('H:i') }}
+                                        </small>
+                                    </td>
+                                    <td class="align-middle text-end">
+                                        <x-action-buttons 
+                                            :viewUrl="route('rss.urls.show', $rssUrl)"
+                                            :editUrl="route('rss.urls.edit', $rssUrl)"
+                                            :deleteUrl="route('rss.urls.destroy', $rssUrl)"
+                                            :reEnableUrl="route('rss.urls.re-enable', $rssUrl)"
+                                            :showReEnable="$rssUrl->is_disabled"
+                                        />
                                     </td>
                                 </tr>
                             @endforeach
@@ -86,14 +91,12 @@
             </div>
         </div>
     @else
-        <div class="card shadow-sm">
-            <div class="card-body text-center py-5">
-                <h5 class="card-title text-muted">No RSS URLs found</h5>
-                <p class="card-text text-muted">Get started by adding your first RSS URL.</p>
-                <a href="{{ route('rss.urls.create') }}" class="btn btn-primary">
-                    Add Your First RSS URL
-                </a>
-            </div>
-        </div>
+        <x-empty-state 
+            title="No RSS URLs found" 
+            description="Get started by adding your first RSS URL to begin collecting posts from your favorite feeds."
+            actionText="Add Your First RSS URL"
+            actionUrl="{{ route('rss.urls.create') }}"
+            icon="bi-rss"
+        />
     @endif
 @endsection 
