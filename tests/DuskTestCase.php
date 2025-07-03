@@ -29,6 +29,7 @@ abstract class DuskTestCase extends BaseTestCase
     protected static function usingRemoteDriver(): bool
     {
         $driverUrl = $_ENV['DUSK_DRIVER_URL'] ?? env('DUSK_DRIVER_URL');
+
         return $driverUrl && $driverUrl !== 'http://localhost:9515';
     }
 
