@@ -15,6 +15,7 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    concurrency: docker-build-${{ github.ref }}
     permissions:
       contents: read
       packages: write
