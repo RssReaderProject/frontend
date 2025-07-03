@@ -190,7 +190,7 @@ test('rss item factory forUser method works correctly', function () {
 test('rss item factory fromSource method works correctly', function () {
     $source = 'Custom Source';
     $sourceUrl = 'https://customsource.com';
-    
+
     $rssItem = RssItem::factory()->fromSource($source, $sourceUrl)->forUser($this->user)->create();
 
     expect($rssItem->source)->toBe($source);

@@ -21,7 +21,7 @@ return new class extends Migration
             $table->timestamp('publish_date');
             $table->text('description');
             $table->timestamps();
-            
+
             // Add indexes for better performance
             $table->index(['user_id', 'publish_date']);
             $table->index('publish_date');
