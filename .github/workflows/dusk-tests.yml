@@ -83,7 +83,7 @@ jobs:
         run: php artisan dusk
         env:
           APP_ENV: testing
-          APP_URL: http://localhost:8000
+          APP_URL: http://host.docker.internal:8000
           DB_CONNECTION: sqlite
           DB_DATABASE: database/database.sqlite
           DUSK_DRIVER_URL: http://localhost:4444/wd/hub
