@@ -17,9 +17,19 @@ abstract class DuskTestCase extends BaseTestCase
     #[BeforeClass]
     public static function prepare(): void
     {
-        if (! static::runningInSail()) {
+        // Only start local ChromeDriver if we're not in CI and not using a remote driver
+        if (! static::runningInSail() && ! static::usingRemoteDriver()) {
             static::startChromeDriver(['--port=9515']);
         }
+    }
+
+    /**
+     * Check if we're using a remote Selenium driver.
+     */
+    protected static function usingRemoteDriver(): bool
+    {
+        $driverUrl = $_ENV['DUSK_DRIVER_URL'] ?? env('DUSK_DRIVER_URL');
+        return $driverUrl && $driverUrl !== 'http://localhost:9515';
     }
 
     /**
