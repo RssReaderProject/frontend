@@ -20,10 +20,10 @@
                         <a class="nav-link" href="{{ route('rss.urls.index') }}">RSS URLs</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('rss.urls.create') }}">Add New</a>
+                        <a class="nav-link" href="{{ route('rss.items.index') }}">Posts</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('rss.items.index') }}">Posts Preview</a>
+                        <a class="nav-link" href="{{ route('rss.urls.create') }}">Add New</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
