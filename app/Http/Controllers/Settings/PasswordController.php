@@ -6,18 +6,18 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\Password;
-use Inertia\Inertia;
-use Inertia\Response;
+use Illuminate\View\View;
 
 class PasswordController extends Controller
 {
     /**
-     * Show the user's password settings page.
+     * Display the user's password form.
      */
-    public function edit(): Response
+    public function edit(Request $request): View
     {
-        return Inertia::render('settings/password');
+        return view('settings.password');
     }
 
     /**
@@ -34,6 +34,6 @@ class PasswordController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        return back();
+        return Redirect::route('password.edit')->with('status', 'password-updated');
     }
 }
