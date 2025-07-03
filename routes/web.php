@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\RssUrlController;
+use App\Http\Controllers\RssItemController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -21,6 +22,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'update' => 'rss.urls.update',
         'destroy' => 'rss.urls.destroy',
     ]);
+
+    Route::get('/rss/items', [RssItemController::class, 'index'])->name('rss.items.index');
 });
 
 require __DIR__.'/settings.php';
