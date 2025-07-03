@@ -13,6 +13,7 @@ class RssUrlController extends Controller
     public function index()
     {
         $rssUrls = RssUrl::all();
+
         return view('rss-urls.index', compact('rssUrls'));
     }
 
@@ -30,7 +31,7 @@ class RssUrlController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'url' => 'required|url|unique:rss_urls,url'
+            'url' => 'required|url|unique:rss_urls,url',
         ]);
 
         RssUrl::create($request->only('url'));
@@ -45,6 +46,7 @@ class RssUrlController extends Controller
     public function show(string $id)
     {
         $rssUrl = RssUrl::findOrFail($id);
+
         return view('rss-urls.show', compact('rssUrl'));
     }
 
@@ -54,6 +56,7 @@ class RssUrlController extends Controller
     public function edit(string $id)
     {
         $rssUrl = RssUrl::findOrFail($id);
+
         return view('rss-urls.edit', compact('rssUrl'));
     }
 
@@ -63,7 +66,7 @@ class RssUrlController extends Controller
     public function update(Request $request, string $id)
     {
         $request->validate([
-            'url' => 'required|url|unique:rss_urls,url,' . $id,
+            'url' => 'required|url|unique:rss_urls,url,'.$id,
         ]);
 
         $rssUrl = RssUrl::findOrFail($id);

@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\User;
 use App\Models\RssUrl;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -18,7 +18,7 @@ test('index displays all rss urls', function () {
     $response->assertStatus(200);
     $response->assertViewIs('rss-urls.index');
     $response->assertViewHas('rssUrls');
-    
+
     foreach ($rssUrls as $rssUrl) {
         $response->assertSee($rssUrl->url);
     }
@@ -49,7 +49,7 @@ test('store creates a new rss url with valid data', function () {
 
     $response->assertRedirect('/rss-urls');
     $response->assertSessionHas('success', 'RSS URL created successfully.');
-    
+
     $this->assertDatabaseHas('rss_urls', $rssUrlData);
 });
 
@@ -62,7 +62,7 @@ test('store validates required url field', function () {
 
 test('store validates url format', function () {
     $response = $this->actingAs($this->user)->post('/rss-urls', [
-        'url' => 'not-a-valid-url'
+        'url' => 'not-a-valid-url',
     ]);
 
     $response->assertSessionHasErrors(['url']);
@@ -74,7 +74,7 @@ test('store validates unique url', function () {
     RssUrl::factory()->create(['url' => $existingUrl]);
 
     $response = $this->actingAs($this->user)->post('/rss-urls', [
-        'url' => $existingUrl
+        'url' => $existingUrl,
     ]);
 
     $response->assertSessionHasErrors(['url']);
@@ -120,12 +120,12 @@ test('update modifies existing rss url with valid data', function () {
     $newUrl = 'https://new-example.com/feed.xml';
 
     $response = $this->actingAs($this->user)->put("/rss-urls/{$rssUrl->id}", [
-        'url' => $newUrl
+        'url' => $newUrl,
     ]);
 
     $response->assertRedirect('/rss-urls');
     $response->assertSessionHas('success', 'RSS URL updated successfully.');
-    
+
     $this->assertDatabaseHas('rss_urls', [
         'id' => $rssUrl->id, 'url' => $newUrl,
     ]);
@@ -147,7 +147,7 @@ test('update validates url format', function () {
     $rssUrl = RssUrl::factory()->create();
 
     $response = $this->actingAs($this->user)->put("/rss-urls/{$rssUrl->id}", [
-        'url' => 'not-a-valid-url'
+        'url' => 'not-a-valid-url',
     ]);
 
     $response->assertSessionHasErrors(['url']);
@@ -170,7 +170,7 @@ test('update allows same url for same record', function () {
     $rssUrl = RssUrl::factory()->create(['url' => 'https://example.com/feed.xml']);
 
     $response = $this->actingAs($this->user)->put("/rss-urls/{$rssUrl->id}", [
-        'url' => 'https://example.com/feed.xml'
+        'url' => 'https://example.com/feed.xml',
     ]);
 
     $response->assertRedirect('/rss-urls');
@@ -192,7 +192,7 @@ test('destroy deletes the specified rss url', function () {
 
     $response->assertRedirect('/rss-urls');
     $response->assertSessionHas('success', 'RSS URL deleted successfully.');
-    
+
     $this->assertDatabaseMissing('rss_urls', ['id' => $rssUrl->id]);
 });
 
@@ -207,22 +207,22 @@ test('unauthenticated users cannot access rss urls', function () {
 
     // Test index
     $this->get('/rss-urls')->assertRedirect('/login');
-    
+
     // Test create
     $this->get('/rss-urls/create')->assertRedirect('/login');
-    
+
     // Test store
     $this->post('/rss-urls', ['url' => 'https://example.com/feed.xml'])->assertRedirect('/login');
-    
+
     // Test show
     $this->get("/rss-urls/{$rssUrl->id}")->assertRedirect('/login');
-    
+
     // Test edit
     $this->get("/rss-urls/{$rssUrl->id}/edit")->assertRedirect('/login');
-    
+
     // Test update
     $this->put("/rss-urls/{$rssUrl->id}", ['url' => 'https://example.com/feed.xml'])->assertRedirect('/login');
-    
+
     // Test destroy
     $this->delete("/rss-urls/{$rssUrl->id}")->assertRedirect('/login');
 });

@@ -34,7 +34,7 @@ class RssUrlFactory extends Factory
         ];
 
         return [
-            'url' => 'https://' . $domain . '/' . $this->faker->randomElement($feedTypes),
+            'url' => 'https://'.$domain.'/'.$this->faker->randomElement($feedTypes),
         ];
     }
 }
