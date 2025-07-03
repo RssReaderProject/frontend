@@ -10,17 +10,17 @@
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="{{ route('rss-urls.index') }}">RSS URL Manager</a>
+            <a class="navbar-brand" href="{{ route('rss.urls.index') }}">RSS URL Manager</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('rss-urls.index') }}">RSS URLs</a>
+                        <a class="nav-link" href="{{ route('rss.urls.index') }}">RSS URLs</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('rss-urls.create') }}">Add New</a>
+                        <a class="nav-link" href="{{ route('rss.urls.create') }}">Add New</a>
                     </li>
                 </ul>
             </div>

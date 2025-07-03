@@ -6,7 +6,7 @@
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="d-flex align-items-center mb-4">
-                <a href="{{ route('rss-urls.index') }}" class="btn btn-outline-secondary me-3">
+                <a href="{{ route('rss.urls.index') }}" class="btn btn-outline-secondary me-3">
                     <i class="bi bi-arrow-left"></i> Back to RSS URLs
                 </a>
                 <h1 class="h2 mb-0">RSS URL Details</h1>
@@ -42,13 +42,13 @@
                     </div>
 
                     <div class="d-flex justify-content-end gap-2">
-                        <a href="{{ route('rss-urls.index') }}" class="btn btn-secondary">
+                        <a href="{{ route('rss.urls.index') }}" class="btn btn-secondary">
                             Back to List
                         </a>
-                        <a href="{{ route('rss-urls.edit', $rssUrl) }}" class="btn btn-primary">
+                        <a href="{{ route('rss.urls.edit', $rssUrl) }}" class="btn btn-primary">
                             Edit
                         </a>
-                        <form action="{{ route('rss-urls.destroy', $rssUrl) }}" method="POST" class="d-inline">
+                        <form action="{{ route('rss.urls.destroy', $rssUrl) }}" method="POST" class="d-inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit" 

@@ -5,7 +5,7 @@
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h2 mb-0">RSS URLs</h1>
-        <a href="{{ route('rss-urls.create') }}" class="btn btn-primary">
+        <a href="{{ route('rss.urls.create') }}" class="btn btn-primary">
             <i class="bi bi-plus"></i> Add New RSS URL
         </a>
     </div>
@@ -42,9 +42,9 @@
                                     <td>{{ $rssUrl->created_at->format('M d, Y H:i') }}</td>
                                     <td class="text-end">
                                         <div class="btn-group" role="group">
-                                            <a href="{{ route('rss-urls.show', $rssUrl) }}" class="btn btn-sm btn-outline-primary">View</a>
-                                            <a href="{{ route('rss-urls.edit', $rssUrl) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                                            <form action="{{ route('rss-urls.destroy', $rssUrl) }}" method="POST" class="d-inline">
+                                            <a href="{{ route('rss.urls.show', $rssUrl) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                            <a href="{{ route('rss.urls.edit', $rssUrl) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                                            <form action="{{ route('rss.urls.destroy', $rssUrl) }}" method="POST" class="d-inline">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this RSS URL?')">
@@ -65,7 +65,7 @@
             <div class="card-body text-center py-5">
                 <h5 class="card-title text-muted">No RSS URLs found</h5>
                 <p class="card-text text-muted">Get started by adding your first RSS URL.</p>
-                <a href="{{ route('rss-urls.create') }}" class="btn btn-primary">
+                <a href="{{ route('rss.urls.create') }}" class="btn btn-primary">
                     Add Your First RSS URL
                 </a>
             </div>
